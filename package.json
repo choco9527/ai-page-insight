@@ -1,0 +1,21 @@
+{
+  "name": "ocean_crawler",
+  "version": "1.0.0",
+  "description": "yys",
+  "main": "index.js",
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "get-pixels": "^3.3.3",
+    "images": "^3.2.4",
+    "puppeteer": "^19.7.0",
+    "puppeteer-extra": "^3.1.18",
+    "puppeteer-extra-plugin-stealth": "^2.7.8",
+    "rembrandt": "^0.1.3"
+  },
+  "scripts": {
+    "local": "node index.js"
+  },
+  "author": "choco",
+  "license": "ISC",
+  "private": "true"
+}
