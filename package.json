@@ -1,7 +1,7 @@
 {
-  "name": "ocean_crawler",
+  "name": "ai-page-insight",
   "version": "1.0.0",
-  "description": "yys",
+  "description": "",
   "main": "index.js",
   "dependencies": {
     "dotenv": "^10.0.0",
@@ -15,7 +15,7 @@
   "scripts": {
     "local": "node index.js"
   },
-  "author": "choco",
+  "author": "CHOCO",
   "license": "ISC",
   "private": "true"
 }
