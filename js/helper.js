@@ -1,13 +1,11 @@
 const CanvasId = 'yyds-canvas'
 
-class HandleCanvas {
+class HandleCanvasClass {
   constructor(videoSelector = '') {
-    this.selector = videoSelector
-    this.canvasEle = null
     this.videoEle = null
     this.viewWidth = 668
     this.viewHeight = 376
-    this.hidden = true
+    this.selector = videoSelector
   }
 
   /**
@@ -19,9 +17,8 @@ class HandleCanvas {
     const K = 4
     let canvasEle = document.createElement('canvas')
     canvasEle.id = `${CanvasId}-${id}`
-    // canvasEle.style.display = 'none' // TODO:: 不隐藏
-    // canvasEle.style.zIndex = '-100'
-    canvasEle.style.opacity = '0'
+    canvasEle.style.zIndex = '100'
+    canvasEle.style.opacity = '1'
     canvasEle.width = this.viewWidth / K
     canvasEle.height = this.viewHeight / K
     document.body.appendChild(canvasEle)
@@ -47,12 +44,20 @@ class HandleCanvas {
     ctx.drawImage(this.videoEle, 0, 0, newCanvas.width, newCanvas.height)
   }
 
+  fresh() {
+    if (!this.videoEle) {
+      this.videoEle = document.querySelector(this.selector ? this.selector : 'video')
+      return this.videoEle
+    }
+  }
+
   /**
    * draw video into canvas
    * @param canvasEle
    * @param height
    */
   drawVideoImg(canvasEle, height = 0) {
+    this.fresh()
     if (this.videoEle) {
       const ctx = canvasEle.getContext('2d')
       ctx.imageSmoothingEnabled = false // 锐化
@@ -60,22 +65,11 @@ class HandleCanvas {
     }
   }
 
-  getCanvasImgData(canvasEle) {
-    const ctx = canvasEle.getContext('2d')
-    ctx.imageSmoothingEnabled = false // 锐化
-    let frame = ctx.getImageData(0, 0, canvasEle.width, canvasEle.height);
-    return Array.from(frame.data)
-  }
-
-  resetCanvasImgData(imageData, canvasEle) {
-    const ctx = canvasEle.getContext('2d')
-    ctx.putImageData(imageData, 0, 0);
-    const base64Data = canvasEle.toDataURL();
-    return base64Data
-  }
-
   /**
-   * 将获取的图像数据进行灰度处理，并将接近白色的像素点保留，其余像素转为黑色，然后将处理后的图像数据绘制到画布上
+   * 将获取的图像数据进行灰度处理，
+   * 并将接近白色的像素点保留，
+   * 其余像素转为黑色，
+   * 然后将处理后的图像数据绘制到画布上
    */
   processImageAndReturnBase64(canvasEle) {
     const ctx = canvasEle.getContext('2d')
@@ -122,6 +116,95 @@ class HandleCanvas {
     // 获取 Canvas 的 Base64 编码
     return canvasEle.toDataURL();
   }
+}
+
+function HandleCanvas(videoSelector = '') {
+  const videoEle = null;
+  const viewWidth = 668;
+  const viewHeight = 376;
+  const selector = videoSelector;
+
+  function initCanvas(id = '') {
+    const K = 4;
+    const canvasEle = document.createElement('canvas');
+    canvasEle.id = `${CanvasId}-${id}`;
+    canvasEle.style.zIndex = '100';
+    canvasEle.style.opacity = '1';
+    canvasEle.width = viewWidth / K;
+    canvasEle.height = viewHeight / K;
+    document.body.appendChild(canvasEle);
+    return canvasEle;
+  }
+
+  function createNewCanvas() {
+    let newCanvas = document.getElementById('yyds-origin-canvas');
+    if (!newCanvas) {
+      newCanvas = document.createElement('canvas');
+      newCanvas.id = 'yyds-origin-canvas';
+      newCanvas.style.zIndex = '100';
+      newCanvas.style.position = 'fixed';
+      newCanvas.style.top = '0';
+      newCanvas.style.left = '0';
+      newCanvas.width = viewWidth;
+      newCanvas.height = viewHeight;
+      newCanvas.style.display = 'block';
+      document.body.appendChild(newCanvas);
+    }
+    newCanvas.style.display = newCanvas.style.display === 'none' ? 'block' : 'none';
+    const ctx = newCanvas.getContext('2d');
+    ctx.drawImage(videoEle, 0, 0, newCanvas.width, newCanvas.height);
+  }
+
+  function fresh() {
+    if (!videoEle) {
+      videoEle = document.querySelector(selector ? selector : 'video');
+      return videoEle;
+    }
+  }
+
+  function drawVideoImg(canvasEle, height = 0) {
+    fresh();
+    if (videoEle) {
+      const ctx = canvasEle.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(videoEle, 0, 0, canvasEle.width, height || canvasEle.height);
+    }
+  }
+
+  function processImageAndReturnBase64(canvasEle) {
+    const ctx = canvasEle.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvasEle.width, canvasEle.height);
+    const data = imageData.data;
+    const threshold = 200;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const gray = (r + g + b) / 3;
+
+      if (gray >= threshold) {
+        data[i] = 255;
+        data[i + 1] = 255;
+        data[i + 2] = 255;
+      } else {
+        data[i] = 0;
+        data[i + 1] = 0;
+        data[i + 2] = 0;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    return canvasEle.toDataURL();
+  }
+
+  return {
+    initCanvas,
+    createNewCanvas,
+    drawVideoImg,
+    processImageAndReturnBase64
+  };
 }
 
 module.exports = {

@@ -23,23 +23,26 @@ function randomNumber(min = 0, max = 0, Int = true) // random Int / Float
  * @returns {Promise<string>}
  */
 
-async function getTextByOcr(imgArr = []) {
+async function getTextByOcrSingle(img) {
   const worker = await createWorker(tesseractWorkerConfig);
 
   await (async () => {
     await worker.loadLanguage(supportLang.zh);
     await worker.initialize(supportLang.zh);
+
     const imgPath = 'https://tesseract.projectnaptha.com/img/eng_bw.png'
     const imgPath1 = path.join(__dirname, '..', 'images', 'test1.png')
     const imgPath2 = path.join(__dirname, '..', 'images', 'test2.png')
     const imgPath3 = path.join(__dirname, '..', 'images', 'test3.png')
-    const {data: {text}} = await worker.recognize(imgPath3);
-    console.log(text);
+
+    const {data: {text}} = await worker.recognize(img);
+    console.log('----文本----', text);
     await worker.terminate();
+    return text
   })();
 }
 
-async function getTextByOcrCopy(imgArr = []) {
+async function getTextByOcr(imgArr = []) {
   const scheduler = await createScheduler();
 
   // Creates worker and adds to scheduler
@@ -51,7 +54,7 @@ async function getTextByOcrCopy(imgArr = []) {
   }
 
   const workerN = 4; // 创建4个线程并行翻译
-  (async () => {
+  await (async () => {
     const resArr = Array(workerN);
     for (let i = 0; i < workerN; i++) {
       resArr[i] = workerGen();
@@ -71,5 +74,6 @@ async function getTextByOcrCopy(imgArr = []) {
 module.exports = {
   randomNumber,
   sleep,
+  getTextByOcrSingle,
   getTextByOcr
 };
