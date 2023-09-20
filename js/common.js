@@ -1,5 +1,5 @@
 // const {createScheduler, createWorker} = require('tesseract.js');
-const Tesseract = require('tesseract.js');
+const {createWorker, createScheduler} = require('tesseract.js');
 const {tesseractWorkerConfig, supportLang} = require('./constans');
 const path = require('path');
 
@@ -23,29 +23,24 @@ function randomNumber(min = 0, max = 0, Int = true) // random Int / Float
  * @returns {Promise<string>}
  */
 
-function getTextByOcr(imgArr = []) {
-  console.log(1, Tesseract)
-  Tesseract.recognize(
-    'https://tesseract.projectnaptha.com/img/eng_bw.png',
-    'eng',
-    { logger: m => console.log(m) }
-  ).then(({ data: { text } }) => {
-    console.log(text);
-  })
+async function getTextByOcr(imgArr = []) {
+  const worker = await createWorker(tesseractWorkerConfig);
 
-  // const worker = createWorker(tesseractWorkerConfig);
-  //
-  // (async () => {
-  //   await worker.loadLanguage(supportLang.zh);
-  //   await worker.initialize(supportLang.zh);
-  //   const { data: { text } } = await worker.recognize(path.join(__dirname, '..', 'images', 'test1.png'));
-  //   console.log(text);
-  //   await worker.terminate();
-  // })();
+  await (async () => {
+    await worker.loadLanguage(supportLang.zh);
+    await worker.initialize(supportLang.zh);
+    const imgPath = 'https://tesseract.projectnaptha.com/img/eng_bw.png'
+    const imgPath1 = path.join(__dirname, '..', 'images', 'test1.png')
+    const imgPath2 = path.join(__dirname, '..', 'images', 'test2.png')
+    const imgPath3 = path.join(__dirname, '..', 'images', 'test3.png')
+    const {data: {text}} = await worker.recognize(imgPath3);
+    console.log(text);
+    await worker.terminate();
+  })();
 }
 
-function getTextByOcrCopy(imgArr = []) {
-  const scheduler = createScheduler();
+async function getTextByOcrCopy(imgArr = []) {
+  const scheduler = await createScheduler();
 
   // Creates worker and adds to scheduler
   const workerGen = async () => {

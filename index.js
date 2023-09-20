@@ -1,10 +1,8 @@
 const puppeteer = require('puppeteer');
-
 const dotenv = require("dotenv")
 dotenv.config()
-const {
-  getTextByOcr
-} = require('./js/common');
+const {getTextByOcr} = require('./js/common');
+const {HandleCanvas} = require('./js/helper')
 
 async function openBrowser() {
   console.log('正在启动 Chrome')
@@ -26,48 +24,15 @@ async function openBrowser() {
 
 const main = async function () {
   // 最终需要的数据集合
-  const dataMap = {
-    'getLiveRoomData': undefined,
-    'getLivingData': undefined,
-    'getAnalysisLivingData': undefined
-  }
+  const dataMap = {}
   try {
     getTextByOcr()
-    return // TODO::到这里
+
     const page = await openBrowser() // 打开浏览器
-    await openPage(page) // 打开页面
+    await _openPage(page) // 打开页面
+    await _getVideoData(page)
 
-    /**
-     * 打开页面
-     * @param p
-     * @returns {Promise<void>}
-     */
-    async function openPage(p) {
-      const urls = [
-        'https://www.bilibili.com/' //
-      ]
-      const url = urls[0]
-      await p.setBypassCSP(true)
-      await p.goto(url);
-    }
-
-    /**
-     * 通过opencv获取视频内容
-     * @param p
-     * @returns {Promise<void>}
-     */
-    async function getVideoInfo(p) {
-
-    }
-
-    /**
-     * 上传openai获取内容
-     * @param p
-     * @returns {Promise<void>}
-     */
-    async function emitOpenAi(p) {
-
-    }
+    return // TODO::到这里
 
     return dataMap
 
@@ -76,6 +41,36 @@ const main = async function () {
     return dataMap
   }
 };
+
+/**
+ * 打开页面
+ * @param p
+ * @returns {Promise<void>}
+ */
+async function _openPage(p) {
+  const urls = [
+    'https://www.bilibili.com/' //
+  ]
+  const url = urls[0]
+  await p.setBypassCSP(true)
+  await p.goto(url);
+}
+
+/**
+ * 获取页面视频
+ * @returns {Promise<XPathResult>}
+ * @private
+ */
+async function _getVideoData(page) {
+  return page.evaluate(async () => {
+    const $canvas = new HandleCanvas('#bilibili-player .bpx-player-video-wrap video');
+    // 刷新一次页面
+    const canEl = $canvas.initCanvas(1);
+    $canvas.drawVideoImg(canEl, 50)
+    const base64Img = $canvas.processImageAndReturnBase64(canEl)
+    return Promise.resolve(base64Img)
+  });
+}
 
 main().then(data => {
   console.log('最终数据', data); /*！最终数据！*/
