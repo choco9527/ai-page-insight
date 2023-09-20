@@ -1,19 +1,28 @@
 const puppeteer = require('puppeteer');
-// const StealthPlugin = require('puppeteer-extra-plugin-stealth')
-// puppeteer.use(StealthPlugin())
 
 const dotenv = require("dotenv")
 dotenv.config()
-
 const {
-  calculateDistance,
-  sleep,
-  liveClick,
-  analysisClick,
-  getLivingData,
-  getAnalysisLivingData,
-  getLiveRoomData
+  getTextByOcr
 } = require('./js/common');
+
+async function openBrowser() {
+  console.log('正在启动 Chrome')
+
+  const options = {
+    headless: false, // 无头模式
+    args: ["--window-position=0,0", `--window-size=1280,800`],
+    defaultViewport: {width: 1280, height: 800},
+    // devtools: true,
+    ignoreDefaultArgs: ["--enable-automation"]
+  }
+  if (process.env.CHROME_PATH) {
+    options.executablePath = process.env.CHROME_PATH
+  }
+  const browser = await puppeteer.launch(options);
+  const [p] = await browser.pages()
+  return p
+}
 
 const main = async function () {
   // 最终需要的数据集合
@@ -23,27 +32,10 @@ const main = async function () {
     'getAnalysisLivingData': undefined
   }
   try {
+    getTextByOcr()
+    return // TODO::到这里
     const page = await openBrowser() // 打开浏览器
     await openPage(page) // 打开页面
-
-
-    async function openBrowser() {
-      console.log('正在启动 Chrome')
-
-      const options = {
-        headless: false, // 无头模式
-        args: ["--window-position=0,0", `--window-size=1280,800`],
-        defaultViewport: {width: 1280, height: 800},
-        // devtools: true,
-        ignoreDefaultArgs: ["--enable-automation"]
-      }
-      if (process.env.CHROME_PATH) {
-        options.executablePath = process.env.CHROME_PATH
-      }
-      const browser = await puppeteer.launch(options);
-      const [p] = await browser.pages()
-      return p
-    }
 
     /**
      * 打开页面
