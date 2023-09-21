@@ -156,8 +156,10 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             currentTime,
             duration: videoEl.duration
           }
-          videoEl.addEventListener('canplaythrough', () => {
+          videoEl.addEventListener('canplaythrough', async () => {
             console.log('视频缓冲完毕，可以播放');
+            await window.sleep(200)
+            videoEl.pause(); // 暂停
             const base64Img = processImageAndReturnBase64(canEl)
             item.base64Img = base64Img
             item.videoTime = timeElement ? timeElement.textContent : '';
