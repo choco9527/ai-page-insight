@@ -29,11 +29,13 @@ const _grayData = data => {
  * @private
  */
 const _initVideo = async (page) => {
-  await page.waitForSelector('#bilibili-player video');
+  await page.waitForSelector('#bilibili-player');
   await page.evaluate(async () => {
     const videoEl = document.querySelector('#bilibili-player video');
-    videoEl.pause() // 先暂停
-    videoEl.currentTime = 0;
+    videoEl.pause()
+    console.log('先暂停')
+    videoEl.currentTime = 0
+    console.log('重置视频')
     const res = {
       duration: 0
     }
@@ -44,55 +46,31 @@ const _initVideo = async (page) => {
   })
 }
 
-/**
- * 获取当前视频信息
- * @param $canvas
- * @returns {{duration: *, base64Img: null, videoTime: string|string, id: number}}
- * @private
- */
-const _getVideoCurInfo = ($canvas = null) => {
-  const timeElement = document.querySelector('#bilibili-player .bpx-player-ctrl-time-current');
-  const videoEl = document.querySelector('#bilibili-player video');
-  const videoTime = timeElement ? timeElement.textContent : '';
-
-  const tId = Date.now()
-  const item = {
-    base64Img: null,
-    videoTime,
-    id: tId,
-    duration: videoEl.duration
-  }
-  if ($canvas) {
-    const canEl = $canvas.drawVideoImg({id: tId})
-    const base64Img = $canvas.processImageAndReturnBase64(canEl)
-    item.base64Img = base64Img
-  }
-  console.log('_getVideoCurInfo', item)
-  return item
-}
 
 /**
- * 获取页面视频
+ * 获取视频页面
  * @returns {Promise<XPathResult>}
  * @private
  */
-async function _getVideoData(page) {
+async function _getVideoData({page, currentTime, tHeight = 80}) {
   console.log('读取视频当前数据')
-  await page.waitForSelector('.bpx-player-video-wrap');
+  await page.waitForSelector('#bilibili-player');
   console.log('视频加载成功')
 
-  const videoData = await page.evaluate(async () => {
+  const videoData = await page.evaluate(async (currentTime, tHeight) => {
     const CanvasId = 'yyds-canvas'
 
-    function HandleCanvas(videoSelector = '') {
+    function HandleCanvas({videoSelector = '', tHeight}) {
       let videoEle = null;
       let viewWidth = 668;
       let viewHeight = 376;
       let selector = videoSelector;
-      const footerHeight = 50
+      const textHeight = tHeight || 80
+      const footerHeight = 30
       const paddingWidth = 100
+      fresh();
 
-      function initCanvas({id = '', height = 0, width = 0}) {
+      function initCanvas({id = '', height, width}) {
         const K = 1;
         const canvasEle = document.createElement('canvas');
         canvasEle.id = `${CanvasId}-${id}`;
@@ -102,7 +80,7 @@ async function _getVideoData(page) {
         canvasEle.style.top = '0';
         canvasEle.style.left = '0';
         canvasEle.width = width / K;
-        canvasEle.height = height ? (height / K) : ((viewHeight - footerHeight) / K);
+        canvasEle.height = height / K;
         document.body.appendChild(canvasEle);
         return canvasEle;
       }
@@ -133,16 +111,16 @@ async function _getVideoData(page) {
         }
       }
 
-      function drawVideoImg({height = 80, id = ''}) {
+      function drawVideoImg({id = ''}) {
         const cWidth = viewWidth - 2 * paddingWidth
-        const cHeight = height - footerHeight
-        const canvasEle = this.initCanvas({id, height: cHeight, width: cWidth})
+        const cHeight = textHeight - footerHeight
+        const canvasEle = initCanvas({id, height: cHeight, width: cWidth})
 
         fresh();
         if (videoEle) {
           const ctx = canvasEle.getContext('2d');
           ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(videoEle, paddingWidth, (viewHeight - height), cWidth, cHeight, 0, 0, cWidth, cHeight);
+          ctx.drawImage(videoEle, paddingWidth, (viewHeight - textHeight), cWidth, cHeight, 0, 0, cWidth, cHeight);
         }
         return canvasEle
       }
@@ -150,30 +128,68 @@ async function _getVideoData(page) {
       function processImageAndReturnBase64(canvasEle) {
         const ctx = canvasEle.getContext('2d');
         const imageData = ctx.getImageData(0, 0, canvasEle.width, canvasEle.height);
-        imageData.data = window._grayData(imageData.data)
+        // imageData.data = window._grayData(imageData.data) // TODO::
 
         ctx.putImageData(imageData, 0, 0);
         return canvasEle.toDataURL();
+      }
+
+      /**
+       *  获取当前视频信息
+       * @param currentTime
+       * @returns {Promise<unknown>}
+       * @private
+       */
+      function _getVideoCurInfo(currentTime = 0) {
+        return new Promise((resolve, reject) => {
+          const timeElement = document.querySelector('#bilibili-player .bpx-player-ctrl-time-current');
+          const videoEl = videoEle
+          videoEl.pause(); // 暂停
+          videoEl.currentTime = currentTime; // 设置视频时间
+
+          const tId = Date.now()
+          const canEl = drawVideoImg({id: tId})
+          const item = {
+            base64Img: null,
+            videoTime: '',
+            id: tId,
+            currentTime,
+            duration: videoEl.duration
+          }
+          videoEl.addEventListener('canplaythrough', () => {
+            console.log('视频缓冲完毕，可以播放');
+            const base64Img = processImageAndReturnBase64(canEl)
+            item.base64Img = base64Img
+            item.videoTime = timeElement ? timeElement.textContent : '';
+            resolve(item)
+          });
+          videoEl.play(); // 继续播放
+        })
       }
 
       return {
         initCanvas,
         createNewCanvas,
         drawVideoImg,
-        processImageAndReturnBase64
+        processImageAndReturnBase64,
+        _getVideoCurInfo,
+        videoEle
       };
     }
 
-    const $canvas = new HandleCanvas();
+    const $canvas = new HandleCanvas({
+      videoSelector: '#bilibili-player video',
+      tHeight
+    });
+    window.$canvas = $canvas
 
-    return Promise.resolve(window._getVideoCurInfo($canvas))
-  });
+    return Promise.resolve(await $canvas._getVideoCurInfo(currentTime))
+  }, currentTime, tHeight);
   return videoData
 }
 
 module.exports = {
   _grayData,
   _getVideoData,
-  _getVideoCurInfo,
   _initVideo
 };
