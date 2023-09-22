@@ -41,11 +41,10 @@ const main = async function () {
       base64,
       base64
     ];
-    const outputFilePath = 'concatenated_image.png';
-    // concatenateImages(base64Images, outputFilePath);
-    concatenateImagesWithOrderText(base64Images, outputFilePath);
+    // const outputFilePath2 = 'concatenated_image.png';
+    // await concatenateImagesWithOrderText(base64Images, outputFilePath2);
 
-    // const text = await getTextByOcrSingle(base64)
+    const text = await getTextByOcrSingle(base64)
 
     return dataMap
   } catch (e) {

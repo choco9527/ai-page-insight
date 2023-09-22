@@ -131,8 +131,7 @@ function concatenateImages(base64Images, outputFilePath) {
     });
 }
 
-
-function concatenateImagesWithOrderText(base64Images, outputFilePath) {
+async function concatenateImagesWithOrderText(base64Images, outputFilePath) {
   const tempImagePaths = [];
 
   // 保存每个 Base64 图像数据为临时文件
@@ -145,95 +144,98 @@ function concatenateImagesWithOrderText(base64Images, outputFilePath) {
     tempImagePaths.push(tempImagePath);
   });
 
-  // 创建一个空的 Jimp 图像数组
-  const images = [];
+  try {
+    // 创建一个空的 Jimp 图像数组
+    const images = [];
 
-  // 读取每个图像并添加到数组中
-  Promise.all(
-    tempImagePaths.map((imagePath) => Jimp.read(imagePath))
-  )
-    .then((results) => {
-      results.forEach((image) => {
-        images.push(image);
-      });
+    // 读取每个图像并添加到数组中
+    for (let i = 0; i < tempImagePaths.length; i++) {
+      const imagePath = tempImagePaths[i];
+      const image = await Jimp.read(imagePath);
+      images.push(image);
+    }
 
-      // 计算拼接后图像的宽度和高度
-      const maxWidth = Math.max(...images.map((image) => image.getWidth()));
-      const totalHeight = images.reduce((sum, image) => sum + image.getHeight(), 0);
+    // 计算拼接后图像的宽度和高度
+    const maxWidth = Math.max(...images.map((image) => image.getWidth()));
+    const totalHeight = images.reduce((sum, image) => sum + image.getHeight(), 0);
 
-      // 创建一个新的 Jimp 图像来容纳拼接后的图像
-      const concatenatedImage = new Jimp(maxWidth, totalHeight);
+    // 创建一个新的 Jimp 图像来容纳拼接后的图像
+    const concatenatedImage = new Jimp(maxWidth, totalHeight);
 
-      // 在拼接图像中逐行绘制每个图像
-      let offsetY = 0;
-      images.forEach((image, index) => {
-        // 添加图片顺序文本
-        const orderText = `Image ${index + 1}`;
-        const orderTextX = 10; // 文本的 x 坐标
-        const orderTextY = offsetY + 10; // 文本的 y 坐标
-        const orderTextOutputPath = `temp_image_${index}_with_text.png`; // 临时输出图像路径
+    // 在拼接图像中逐行绘制每个图像
+    let offsetY = 0;
+    for (let i = 0; i < images.length; i++) {
+      const image = images[i];
 
-        addTextToImage(image, orderText, orderTextX, orderTextY, orderTextOutputPath);
+      // 添加图片顺序文本
+      const orderText = `TEXT${i + 1}`;
+      const orderTextX = 10; // 文本的 x 坐标
+      const orderTextY = offsetY + 10; // 文本的 y 坐标
+      const orderTextOutputPath = `temp_image_${i}_with_text.png`; // 临时输出图像路径
 
-        // 读取带有文本的图像并添加到拼接图像中
-        const imageWithText = Jimp.read(orderTextOutputPath);
-        concatenatedImage.blit(imageWithText, 0, offsetY);
+      await addTextToImage(image, orderText, orderTextX, orderTextY, orderTextOutputPath);
 
-        offsetY += image.getHeight();
-      });
+      // 读取带有文本的图像并添加到拼接图像中
+      const imageWithText = await Jimp.read(orderTextOutputPath);
+      concatenatedImage.blit(imageWithText, 0, offsetY);
 
-      // 将拼接后的图像保存为文件
+      offsetY += image.getHeight();
+    }
+
+    // 将拼接后的图像保存为文件
+    await new Promise((resolve, reject) => {
       concatenatedImage.write(outputFilePath, (err) => {
         if (err) {
-          console.error('Error writing the concatenated image:', err);
+          reject(err);
         } else {
-          console.log('Concatenated image with order text saved successfully.');
+          resolve();
         }
-
-        // 删除临时文件
-        tempImagePaths.forEach((tempImagePath) => {
-          fs.unlinkSync(tempImagePath);
-        });
-
-        // 删除临时带有文本的图像文件
-        for (let i = 0; i < images.length; i++) {
-          fs.unlinkSync(`temp_image_${i}_with_text.png`);
-        }
-      });
-    })
-    .catch((err) => {
-      console.error('Error reading images2 :', err);
-
-      // 删除临时文件（如果出现错误）
-      tempImagePaths.forEach((tempImagePath) => {
-        fs.unlinkSync(tempImagePath);
       });
     });
+
+    console.log('Concatenated image with order text saved successfully.');
+  } catch (err) {
+    console.error('Error processing images:', err);
+  } finally {
+    // 删除临时文件
+    tempImagePaths.forEach((tempImagePath) => {
+      fs.unlinkSync(tempImagePath);
+    });
+
+    // 删除临时带有文本的图像文件
+    for (let i = 0; i < base64Images.length; i++) {
+      fs.unlinkSync(`temp_image_${i}_with_text.png`);
+    }
+  }
 }
 
-function addTextToImage(image, text, x, y, outputPath) {
+async function addTextToImage(image, text, x, y, outputPath) {
   // 设置文本样式
-  const textFont = Jimp.FONT_SANS_32_BLACK;
-  const textColor = 0xFFFFFFFF; // 白色
+  const textFont = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+  const textColor = 0x000000FF; // 白色
   const textOptions = {
     text: text,
-    alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-    alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE,
+    textColor,
+    alignmentX: 1,
+    alignmentY: 1,
   };
 
   // 在图像中添加文本
-  image.print(Jimp.loadFont(textFont), x, y, textOptions, image.getWidth(), image.getHeight());
+  image.print(textFont, 1, 1, textOptions, image.getWidth(), image.getHeight());
 
   // 保存修改后的图像
-  image.write(outputPath, (err) => {
-    if (err) {
-      console.error('Error writing the image with added text:', err);
-    } else {
-      console.log('Image with added text saved successfully.');
-    }
+  await new Promise((resolve, reject) => {
+    image.write(outputPath, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
   });
-}
 
+  console.log('Image with added text saved successfully.');
+}
 
 module.exports = {
   randomNumber,
