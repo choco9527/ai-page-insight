@@ -6,6 +6,7 @@
  */
 const _grayData = data => {
   const threshold = 200;
+  const newData = []
 
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
@@ -16,11 +17,11 @@ const _grayData = data => {
     if ((gray < threshold) || [r, g, b].some(val => val < 195)) {
       color = 0
     }
-    data[i] = color;
-    data[i + 1] = color;
-    data[i + 2] = color;
+    newData[i] = color;
+    newData[i + 1] = color;
+    newData[i + 2] = color;
   }
-  return data
+  return newData
 }
 /**
  * 初始化视频
@@ -29,7 +30,8 @@ const _grayData = data => {
  * @private
  */
 const _initVideo = async (page) => {
-  await page.waitForSelector('#bilibili-player');
+  await page.waitForSelector('#bilibili-player video');
+  // await element.click();
   await page.evaluate(async () => {
     const videoEl = document.querySelector('#bilibili-player video');
     videoEl.pause()
@@ -58,9 +60,9 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
   console.log('视频加载成功')
 
   const videoData = await page.evaluate(async (currentTime, tHeight) => {
-    const CanvasId = 'yyds-canvas'
-
     function HandleCanvas({videoSelector = '', tHeight}) {
+      const CanvasId = 'yyds-canvas'
+
       let videoEle = null;
       let viewWidth = 668;
       let viewHeight = 376;
@@ -85,25 +87,6 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         return canvasEle;
       }
 
-      function createNewCanvas() {
-        let newCanvas = document.getElementById('yyds-origin-canvas');
-        if (!newCanvas) {
-          newCanvas = document.createElement('canvas');
-          newCanvas.id = 'yyds-origin-canvas';
-          newCanvas.style.zIndex = '100';
-          newCanvas.style.position = 'fixed';
-          newCanvas.style.top = '0';
-          newCanvas.style.left = '0';
-          newCanvas.width = viewWidth;
-          newCanvas.height = viewHeight;
-          newCanvas.style.display = 'block';
-          document.body.appendChild(newCanvas);
-        }
-        newCanvas.style.display = newCanvas.style.display === 'none' ? 'block' : 'none';
-        const ctx = newCanvas.getContext('2d');
-        ctx.drawImage(videoEle, 0, 0, newCanvas.width - 2 * paddingWidth, newCanvas.height);
-      }
-
       function fresh() {
         if (!videoEle) {
           videoEle = document.querySelector(selector ? selector : 'video');
@@ -114,22 +97,42 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
       function drawVideoImg({id = ''}) {
         const cWidth = viewWidth - 2 * paddingWidth
         const cHeight = textHeight - footerHeight
-        const canvasEle = initCanvas({id, height: cHeight, width: cWidth})
+        const cElWidth = cWidth * 2
+        const cElHeight = cHeight * 2
+        const canvasEle = initCanvas({id, width: cElWidth, height: cElHeight})
 
         fresh();
         if (videoEle) {
           const ctx = canvasEle.getContext('2d');
           ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(videoEle, paddingWidth, (viewHeight - textHeight), cWidth, cHeight, 0, 0, cWidth, cHeight);
+          ctx.drawImage(videoEle, paddingWidth, (viewHeight - textHeight), cWidth, cHeight, 0, 0, cElWidth, cElHeight);
         }
         return canvasEle
       }
 
-      function processImageAndReturnBase64(canvasEle) {
+      async function processImageAndReturnBase64(canvasEle) {
         const ctx = canvasEle.getContext('2d');
         const imageData = ctx.getImageData(0, 0, canvasEle.width, canvasEle.height);
-        // imageData.data = window._grayData(imageData.data) // TODO::
+        const _grayData = data => { // 二值化
+          const threshold = 180;
 
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const gray = (r + g + b) / 3;
+            let color = 255
+            if ([r, g, b].every(val => (val > threshold))) {
+              color = 0
+            }
+            data[i] = color;
+            data[i + 1] = color;
+            data[i + 2] = color;
+          }
+          return data
+        }
+        _grayData(imageData.data)
+        console.log('输出imageData')
         ctx.putImageData(imageData, 0, 0);
         return canvasEle.toDataURL();
       }
@@ -148,7 +151,6 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
           videoEl.currentTime = currentTime; // 设置视频时间
 
           const tId = Date.now()
-          const canEl = drawVideoImg({id: tId})
           const item = {
             base64Img: null,
             videoTime: '',
@@ -158,9 +160,10 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
           }
           videoEl.addEventListener('canplaythrough', async () => {
             console.log('视频缓冲完毕，可以播放');
-            await window.sleep(200)
+            // await window.sleep(100)
             videoEl.pause(); // 暂停
-            const base64Img = processImageAndReturnBase64(canEl)
+            const canEl = drawVideoImg({id: tId})
+            const base64Img = await processImageAndReturnBase64(canEl)
             item.base64Img = base64Img
             item.videoTime = timeElement ? timeElement.textContent : '';
             resolve(item)
@@ -171,7 +174,6 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
 
       return {
         initCanvas,
-        createNewCanvas,
         drawVideoImg,
         processImageAndReturnBase64,
         _getVideoCurInfo,
@@ -183,8 +185,8 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
       videoSelector: '#bilibili-player video',
       tHeight
     });
+    // $canvas._getVideoCurInfo(60)
     window.$canvas = $canvas
-
     return Promise.resolve(await $canvas._getVideoCurInfo(currentTime))
   }, currentTime, tHeight);
   return videoData
@@ -193,5 +195,5 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
 module.exports = {
   _grayData,
   _getVideoData,
-  _initVideo
+  _initVideo,
 };
