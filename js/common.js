@@ -168,7 +168,7 @@ async function concatenateImagesWithOrderText(base64Images, outputFilePath) {
       const image = images[i];
 
       // 添加图片顺序文本
-      const orderText = `TEXT${i + 1}`;
+      const orderText = `TEXT${i}`;
       const orderTextX = 10; // 文本的 x 坐标
       const orderTextY = offsetY + 10; // 文本的 y 坐标
       const orderTextOutputPath = `temp_image_${i}_with_text.png`; // 临时输出图像路径
