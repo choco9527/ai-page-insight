@@ -1,28 +1,4 @@
-/**
- * 灰化突出字幕内容
- * @param data
- * @returns {*}
- * @private
- */
-const _grayData = data => {
-  const threshold = 200;
-  const newData = []
 
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const gray = (r + g + b) / 3;
-    let color = 255
-    if ((gray < threshold) || [r, g, b].some(val => val < 195)) {
-      color = 0
-    }
-    newData[i] = color;
-    newData[i + 1] = color;
-    newData[i + 2] = color;
-  }
-  return newData
-}
 /**
  * 初始化视频
  * @param page
@@ -31,7 +7,6 @@ const _grayData = data => {
  */
 const _initVideo = async (page) => {
   await page.waitForSelector('#bilibili-player video');
-  // await element.click();
   return page.evaluate(async () => {
     const videoEl = document.querySelector('#bilibili-player video');
     videoEl.pause()
@@ -59,6 +34,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
   await page.waitForSelector('#bilibili-player');
 
   const videoData = await page.evaluate(async (currentTime, tHeight) => {
+
     function HandleCanvas({videoSelector = '', tHeight}) {
       const CanvasId = 'yyds-canvas'
 
@@ -213,7 +189,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             item.videoTime = timeElement ? timeElement.textContent : '';
             resolve(item)
           });
-          videoEl.play(); // 继续播放
+          // videoEl.play(); // 继续播放
         })
       }
 
@@ -239,7 +215,6 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
 }
 
 module.exports = {
-  _grayData,
   _getVideoData,
   _initVideo,
 };

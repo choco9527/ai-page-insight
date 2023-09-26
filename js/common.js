@@ -1,9 +1,7 @@
 // const {createScheduler, createWorker} = require('tesseract.js');
 const fs = require('fs');
-const {createWorker, createScheduler} = require('tesseract.js');
-const {tesseractWorkerConfig, supportLang} = require('./constans');
-const path = require('path');
 const Jimp = require('jimp');
+const querystring = require('querystring');
 
 function sleep(ms = 0) {
   return new Promise(resolve => {
@@ -19,54 +17,6 @@ function randomNumber(min = 0, max = 0, Int = true) // random Int / Float
   return Int ? Math.floor(Math.random() * (max - min + 1) + min) :
     Math.random() * (max - min) + min
 }
-
-/**
- * 通过 tesseract 进行ocr识别文字
- * @returns {Promise<string>}
- */
-
-async function getTextByOcrSingle(img) {
-  const worker = await createWorker(tesseractWorkerConfig);
-
-  await (async () => {
-    await worker.loadLanguage(supportLang.zh);
-    await worker.initialize(supportLang.zh);
-
-    const {data: {text}} = await worker.recognize(img);
-    console.log('----文本----', text);
-    await worker.terminate();
-    return text
-  })();
-}
-
-async function getTextByOcr(imgArr = []) {
-  const scheduler = await createScheduler();
-
-  // Creates worker and adds to scheduler
-  const workerGen = async () => {
-    const worker = await createWorker(tesseractWorkerConfig);
-    await worker.loadLanguage(supportLang.zh);
-    await worker.initialize(supportLang.zh);
-    scheduler.addWorker(worker);
-  }
-
-  const workerN = 4; // 创建4个线程并行翻译
-  await (async () => {
-    const resArr = Array(workerN);
-    for (let i = 0; i < workerN; i++) {
-      resArr[i] = workerGen();
-    }
-    await Promise.all(resArr);
-    /** Add 4 recognition jobs */
-    const results = await Promise.all(imgArr.map(async imgName => {
-      const imagePath = path.join(__dirname, '..', 'images', imgName)
-      const {data: {text}} = scheduler.addJob('recognize', imagePath)
-      return text
-    }))
-    await scheduler.terminate(); // It also terminates all workers.
-  })();
-}
-
 
 function concatenateImages(base64Images, outputFilePath) {
   const tempImagePaths = [];
@@ -237,11 +187,33 @@ async function addTextToImage(image, text, x, y, outputPath) {
   console.log('Image with added text saved successfully.');
 }
 
+function imageToBase64(filePath) {
+  // 读取图片文件
+  const imageBuffer = fs.readFileSync(filePath);
+
+  // 将图片数据转换为 Base64
+  const base64Data = imageBuffer.toString('base64');
+  const size = getBase64SizeInMB(base64Data)
+  console.log(size);
+
+  // URL 编码 Base64 字符串
+  const urlEncodedData = querystring.escape(base64Data);
+
+  return urlEncodedData;
+}
+
+function getBase64SizeInMB(base64String) {
+  const base64WithoutPrefix = base64String.replace(/^data:image\/\w+;base64,/, '');
+  const buffer = Buffer.from(base64WithoutPrefix, 'base64');
+  const sizeInBytes = buffer.length;
+  const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
+  return sizeInMB;
+}
+
 module.exports = {
   randomNumber,
   sleep,
-  getTextByOcrSingle,
-  getTextByOcr,
   concatenateImages,
-  concatenateImagesWithOrderText
+  concatenateImagesWithOrderText,
+  imageToBase64
 };
