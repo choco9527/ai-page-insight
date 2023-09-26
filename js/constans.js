@@ -19,7 +19,7 @@ const launchConfigAll = [
   "--window-position=0,0",
   `--window-size=1280,800`,
   '–enable-gpu', // GPU硬件加速
-  '--disable-timeouts-for-profiling'
+  '--disable-timeouts-for-profiling',
 
 // '--autoplay-policy=user-gesture-required',
   // '--disable-background-networking',

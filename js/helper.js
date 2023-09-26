@@ -113,6 +113,15 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         const ctx = canvasEle.getContext('2d');
         const imageData = ctx.getImageData(0, 0, canvasEle.width, canvasEle.height);
         const _grayData = data => { // 二值化
+          function calculateVariance(array) { // 计算方差
+            // 计算数组的平均值
+            const mean = array.reduce((sum, value) => sum + value, 0) / array.length;
+            // 计算差异的平方
+            const squaredDifferences = array.map(value => Math.pow(value - mean, 2));
+            // 计算平方差异的平均值
+            const variance = squaredDifferences.reduce((sum, value) => sum + value, 0) / array.length;
+            return variance;
+          }
           const threshold = 170;
           for (let i = 0; i < data.length; i += 4) {
             const r = data[i];
