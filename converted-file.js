@@ -220,7 +220,7 @@ function _getVideoData2() {
                         return videoEle;
                       }
                     }
-                    function drawVideoImg(_ref4) {
+                    function drawCaptionImg(_ref4) {
                       var _ref4$height = _ref4.height,
                         height = _ref4$height === void 0 ? 80 : _ref4$height,
                         _ref4$id = _ref4.id,
@@ -266,7 +266,7 @@ function _getVideoData2() {
                     return {
                       initCanvas: initCanvas,
                       createNewCanvas: createNewCanvas,
-                      drawVideoImg: drawVideoImg,
+                      drawCaptionImg: drawCaptionImg,
                       processImageAndReturnBase64: processImageAndReturnBase64
                     };
                   };
@@ -276,7 +276,7 @@ function _getVideoData2() {
                     var timeElement = document.querySelector('#bilibili-player .bpx-player-ctrl-time-current');
                     var videoTime = timeElement ? timeElement.textContent : '';
                     var tId = Date.now();
-                    var canEl = $canvas.drawVideoImg({
+                    var canEl = $canvas.drawCaptionImg({
                       id: tId
                     });
                     var base64Img = $canvas.processImageAndReturnBase64(canEl);

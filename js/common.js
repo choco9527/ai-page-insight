@@ -199,7 +199,7 @@ function imageToBase64(filePath) {
   // URL 编码 Base64 字符串
   const urlEncodedData = querystring.escape(base64Data);
 
-  return urlEncodedData;
+  return base64Data;
 }
 
 function getBase64SizeInMB(base64String) {

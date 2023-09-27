@@ -7,14 +7,14 @@ const {_initVideo, _getVideoData} = require('./helper')
 
 const aiPageHandler = async function (
   {
-    captionHeight = 60,
-    outputFilePath
+    captionHeight = 60, // 字幕高度
+    outputFilePath, // 输出文件地址
+    pageUrl = '' // 视频地址
   }) {
-
-  const dataMap = {}
+  const videoInfoArr = [];
   try {
     const {page, browser} = await openBrowser() // 打开浏览器
-    await _openPage(page) // 打开页面
+    await _openPage(page, pageUrl) // 打开页面
     console.log('--sleeping--')
     await sleep(5000);
     console.log('--loading--')
@@ -25,9 +25,8 @@ const aiPageHandler = async function (
     console.log('--init end--')
     console.log(`视频时长共${duration}秒`)
 
-    const videoInfoArr = [];
     for (let i = 1; i < 20; i += 1.5) { // TODO::
-      // return {base64Img, videoTime, currentTime, id}
+      // return {base64Img, videoImage, videoTime, currentTime, id}
       const item = await _getVideoData({
         page,
         currentTime: i,
@@ -47,11 +46,11 @@ const aiPageHandler = async function (
     // const text = await getTextByOcrSingle(base64)
     // console.log(text);
 
-    return dataMap
+    return videoInfoArr
   } catch (e) {
     console.warn(e);
     // await browser.close();
-    return dataMap
+    return videoInfoArr
   }
 };
 
@@ -77,15 +76,16 @@ async function openBrowser() {
 /**
  * 打开页面
  * @param page
+ * @param pageUrl
  * @returns {Promise<void>}
  */
-async function _openPage(page) {
+async function _openPage(page, pageUrl) {
   const urls = [
-    // 'https://www.baidu.com/',
+    'https://www.bilibili.com/video/BV14D4y1M7ub/?spm_id_from=333.788.recommend_more_video.-1&vd_source=f4666564bd398823589647df2a108413',
     'https://www.bilibili.com/video/BV1Nu411w7DL/?spm_id_from=333.1007.tianma.1-1-1.click',
     'https://www.bilibili.com/video/BV1zm4y1N7zp/?spm_id_from=333.337.search-card.all.click' //
   ]
-  const url = urls[0]
+  const url = pageUrl ? pageUrl : urls[0]
   // await p.setBypassCSP(true)
   await page.goto(url);
   await page.setCookie(...cookiesArray);

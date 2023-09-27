@@ -3,7 +3,7 @@ require('dotenv').config();
 const AK = process.env.AK;
 const SK = process.env.SK;
 
-async function generalBasicImg(image) {
+async function generalBasicImg({image}) {
   var options = {
     'method': 'POST',
     'url': 'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=' + await getAccessToken(),

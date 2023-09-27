@@ -1,4 +1,3 @@
-
 /**
  * 初始化视频
  * @param page
@@ -69,7 +68,8 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         }
       }
 
-      function drawVideoImg({id = ''}) {
+      function drawCaptionImg({id = ''}) {
+        // 画出字幕
         const cWidth = viewWidth - 2 * paddingWidth
         const cHeight = textHeight - footerHeight
         const cElWidth = cWidth * 2
@@ -85,11 +85,23 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         return canvasEle
       }
 
-      async function processImageAndReturnBase64(canvasEle) {
+      function drawVideoImg() {
+        // 画出原图
+        const canvasEle = initCanvas({id: 'ori-canvas-video', width: viewWidth, height: viewHeight})
+        fresh();
+        if (videoEle) {
+          const ctx = canvasEle.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(videoEle, 0, 0, viewWidth, viewHeight, 0, 0, viewWidth, viewHeight);
+        }
+        return canvasEle
+      }
+
+      async function processImageAndReturnBase64(canvasEle, {gray = true, scaleRatio = 1} = {}) {
         const ctx = canvasEle.getContext('2d');
         const imageData = ctx.getImageData(0, 0, canvasEle.width, canvasEle.height);
         const _grayData = data => { // 二值化
-          function calculateVariance(array) { // 计算方差
+          function calculateVariance(array) { // 计算方差 TODO::
             // 计算数组的平均值
             const mean = array.reduce((sum, value) => sum + value, 0) / array.length;
             // 计算差异的平方
@@ -98,6 +110,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             const variance = squaredDifferences.reduce((sum, value) => sum + value, 0) / array.length;
             return variance;
           }
+
           const threshold = 170;
           for (let i = 0; i < data.length; i += 4) {
             const r = data[i];
@@ -114,7 +127,9 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
           }
           return data
         }
-        _grayData(imageData.data)
+        if (gray) {
+          _grayData(imageData.data)
+        }
         console.log('输出imageData')
         ctx.putImageData(imageData, 0, 0);
 
@@ -156,7 +171,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         }
 
         // 放大图片
-        const scaledCanvas = scaleImage(canvasEle, 2)
+        const scaledCanvas = scaleImage(canvasEle, scaleRatio)
         return scaledCanvas.toDataURL();
       }
 
@@ -174,7 +189,8 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
 
           const tId = Date.now()
           const item = {
-            base64Img: null,
+            base64Img: null, // 字幕图像
+            videoImage: '', // 当前视频画面
             videoTime: '', // 视频当前时间
             currentTime, // 当前秒
             id: tId,
@@ -183,9 +199,11 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             console.log('视频缓冲完毕，可以播放');
             videoEl.pause(); // 暂停
             await window.sleep(100)
-            const canEl = drawVideoImg({id: tId})
-            const base64Img = await processImageAndReturnBase64(canEl)
-            item.base64Img = base64Img
+            const canEl = drawCaptionImg({id: tId})
+            const videoCanEl = drawVideoImg()
+
+            item.base64Img = await processImageAndReturnBase64(canEl, {scaleRatio: 2})
+            item.videoImage = await processImageAndReturnBase64(videoCanEl, {gray: false})
             item.videoTime = timeElement ? timeElement.textContent : '';
             resolve(item)
           });
@@ -195,7 +213,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
 
       return {
         initCanvas,
-        drawVideoImg,
+        drawCaptionImg,
         processImageAndReturnBase64,
         _getVideoCurInfo,
         videoEle
