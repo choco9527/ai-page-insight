@@ -6,6 +6,8 @@
  */
 const _initVideo = async (page) => {
   await page.waitForSelector('#bilibili-player video');
+  await page.click('.bpx-player-ctrl-btn.bpx-player-ctrl-wide');
+
   return page.evaluate(async () => {
     const videoEl = document.querySelector('#bilibili-player video');
     videoEl.pause()
@@ -25,7 +27,7 @@ const _initVideo = async (page) => {
 
 /**
  * 获取视频页面
- * @returns {Promise<{base64Img, videoTime, currentTime, id}>}
+ * @returns {Promise<{captionImg, videoTime, currentTime, id}>}
  * @private
  */
 async function _getVideoData({page, currentTime, tHeight = 80}) {
@@ -38,20 +40,20 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
       const CanvasId = 'yyds-canvas'
 
       let videoEle = null;
-      let viewWidth = 668;
-      let viewHeight = 376;
+      let viewWidth = 923 // 668;
+      let viewHeight = 516 // 376;
       let selector = videoSelector;
-      const textHeight = tHeight || 80
-      const footerHeight = 30
-      const paddingWidth = 50
+      const textHeight = tHeight || 100
+      const footerHeight = 180
+      const paddingWidth = 80
       fresh();
 
-      function initCanvas({id = '', height, width}) {
+      function initCanvas({id = '', width, height, hide = false}) {
         const K = 1;
         const canvasEle = document.createElement('canvas');
         canvasEle.id = `${CanvasId}-${id}`;
         canvasEle.style.zIndex = '1100';
-        canvasEle.style.opacity = '1';
+        canvasEle.style.opacity = hide ? 0 : '1';
         canvasEle.style.position = 'fixed';
         canvasEle.style.top = '0';
         canvasEle.style.left = '0';
@@ -87,7 +89,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
 
       function drawVideoImg() {
         // 画出原图
-        const canvasEle = initCanvas({id: 'ori-canvas-video', width: viewWidth, height: viewHeight})
+        const canvasEle = initCanvas({id: 'ori-canvas-video', width: viewWidth, height: viewHeight, hide: true})
         fresh();
         if (videoEle) {
           const ctx = canvasEle.getContext('2d');
@@ -97,11 +99,11 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         return canvasEle
       }
 
-      async function processImageAndReturnBase64(canvasEle, {gray = true, scaleRatio = 1} = {}) {
+      async function processImageAndReturnBase64(canvasEle, {gray = false, scaleRatio = 1} = {}) {
         const ctx = canvasEle.getContext('2d');
         const imageData = ctx.getImageData(0, 0, canvasEle.width, canvasEle.height);
         const _grayData = data => { // 二值化
-          function calculateVariance(array) { // 计算方差 TODO::
+          function calculateVariance(array) { // 计算方差
             // 计算数组的平均值
             const mean = array.reduce((sum, value) => sum + value, 0) / array.length;
             // 计算差异的平方
@@ -111,14 +113,25 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             return variance;
           }
 
-          const threshold = 170;
+          const threshold = 190;
+
+          function checkTwoValuesGreaterThan(array, threshold2 = 205) {
+            return array.filter(value => value > threshold2).length >= 2;
+          }
+
           for (let i = 0; i < data.length; i += 4) {
             const r = data[i];
             const g = data[i + 1];
             const b = data[i + 2];
             const gray = (r + g + b) / 3;
             let color = 255
-            if ([r, g, b].every(val => (val > threshold))) {
+
+            // 都大于阈值 && 方差小于10
+            if (
+              // gray > threshold &&
+              [r, g, b].every(val => (val > threshold))
+              && checkTwoValuesGreaterThan([r, g, b])
+            ) {
               color = 0
             }
             data[i] = color;
@@ -127,6 +140,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
           }
           return data
         }
+
         if (gray) {
           _grayData(imageData.data)
         }
@@ -189,7 +203,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
 
           const tId = Date.now()
           const item = {
-            base64Img: null, // 字幕图像
+            captionImg: null, // 字幕图像
             videoImage: '', // 当前视频画面
             videoTime: '', // 视频当前时间
             currentTime, // 当前秒
@@ -199,11 +213,10 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             console.log('视频缓冲完毕，可以播放');
             videoEl.pause(); // 暂停
             await window.sleep(100)
-            const canEl = drawCaptionImg({id: tId})
-            const videoCanEl = drawVideoImg()
-
-            item.base64Img = await processImageAndReturnBase64(canEl, {scaleRatio: 2})
-            item.videoImage = await processImageAndReturnBase64(videoCanEl, {gray: false})
+            const captionCanvasEl = drawCaptionImg({id: tId})
+            const videoCanvasEl = drawVideoImg()
+            item.captionImg = await processImageAndReturnBase64(captionCanvasEl, {scaleRatio: 0.5})
+            item.videoImage = await processImageAndReturnBase64(videoCanvasEl, {gray: false})
             item.videoTime = timeElement ? timeElement.textContent : '';
             resolve(item)
           });
@@ -214,7 +227,6 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
       return {
         initCanvas,
         drawCaptionImg,
-        processImageAndReturnBase64,
         _getVideoCurInfo,
         videoEle
       };

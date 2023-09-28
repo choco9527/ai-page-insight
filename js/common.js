@@ -162,7 +162,7 @@ async function concatenateImagesWithOrderText(base64Images, outputFilePath) {
 async function addTextToImage(image, text, x, y, outputPath) {
   // 设置文本样式
   const textFont = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
-  const textColor = 0x000000FF; // 白色
+  const textColor = 0x000000FF;
   const textOptions = {
     text: text,
     textColor,
@@ -210,10 +210,22 @@ function getBase64SizeInMB(base64String) {
   return sizeInMB;
 }
 
+
+function saveJSONToFile(jsonStr, filePath) {
+  fs.writeFile(filePath, jsonStr, 'utf8', (err) => {
+    if (err) {
+      console.error('Error writing JSON file:', err);
+    } else {
+      console.log('JSON file has been saved successfully.');
+    }
+  });
+}
+
 module.exports = {
   randomNumber,
   sleep,
   concatenateImages,
   concatenateImagesWithOrderText,
-  imageToBase64
+  imageToBase64,
+  saveJSONToFile
 };

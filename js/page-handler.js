@@ -1,19 +1,21 @@
 // const puppeteer = require('puppeteer-core');
 const puppeteer = require('puppeteer');
-const {sleep, concatenateImagesWithOrderText} = require('./common');
+const {sleep, concatenateImagesWithOrderText, saveJSONToFile} = require('./common');
 const {getTextByOcrSingle, concatenateImages} = require('./tesseractOcr');
 const {launchConfig, cookiesArray} = require('./constans');
 const {_initVideo, _getVideoData} = require('./helper')
+require('dotenv').config();
 
 const aiPageHandler = async function (
   {
-    captionHeight = 60, // 字幕高度
-    outputFilePath, // 输出文件地址
+    captionHeight = 100, // 字幕高度
+    outputName, // 输出图片\文件地址
     pageUrl = '' // 视频地址
   }) {
   const videoInfoArr = [];
+
   try {
-    const {page, browser} = await openBrowser() // 打开浏览器
+    const {page} = await openBrowser() // 打开浏览器
     await _openPage(page, pageUrl) // 打开页面
     console.log('--sleeping--')
     await sleep(5000);
@@ -25,8 +27,8 @@ const aiPageHandler = async function (
     console.log('--init end--')
     console.log(`视频时长共${duration}秒`)
 
-    for (let i = 1; i < 20; i += 1.5) { // TODO::
-      // return {base64Img, videoImage, videoTime, currentTime, id}
+    for (let i = 1; i < 10; i += 1.5) { // TODO::
+      // return {captionImg, videoImage, videoTime, currentTime, id}
       const item = await _getVideoData({
         page,
         currentTime: i,
@@ -39,9 +41,13 @@ const aiPageHandler = async function (
     }
     await sleep(1000);
 
-    // 合并图片
-    const base64Images = videoInfoArr.map(item => item.base64Img)
-    await concatenateImagesWithOrderText(base64Images, outputFilePath);
+    if (outputName) {
+      console.log('合并字幕图片')
+      const allCaptionImg = videoInfoArr.map(item => item.captionImg)
+      await concatenateImagesWithOrderText(allCaptionImg, `output/${outputName}.png`);
+      console.log('保存全部数据到json')
+      saveJSONToFile(JSON.stringify(videoInfoArr), `output/${outputName}.json`)
+    }
 
     // const text = await getTextByOcrSingle(base64)
     // console.log(text);
@@ -58,12 +64,12 @@ async function openBrowser() {
   console.log('正在启动 Chrome')
 
   const options = {
-    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', // 使用默认的浏览器执行路径
-    headless: 'new', // 'new', // 无头模式
+    headless: false, // 'new', // 无头模式
     args: launchConfig,
     defaultViewport: {width: 1280, height: 800},
+    timeout: 60000,
     // devtools: true,
-    // ignoreDefaultArgs: ["--enable-automation"]
+    ignoreDefaultArgs: ["--enable-automation"]
   }
   if (process.env.CHROME_PATH) {
     options.executablePath = process.env.CHROME_PATH
@@ -87,7 +93,7 @@ async function _openPage(page, pageUrl) {
   ]
   const url = pageUrl ? pageUrl : urls[0]
   // await p.setBypassCSP(true)
-  await page.goto(url);
+  await page.goto(url, {timeout: 60000});
   await page.setCookie(...cookiesArray);
 }
 
