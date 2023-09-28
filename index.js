@@ -1,19 +1,18 @@
 const {aiPageHandler} = require('./js/page-handler')
 const {imageToBase64, saveJSONToFile} = require('./js/common')
-const {callChatGPT} = require('./js/openai')
 const {generalBasicImg} = require('./js/baiduOcr/rest2.0ocrv1general_basic')
 
 const main = async function () {
-  // const outputName = 'test_out_put'
-  // const videoInfoArr = await aiPageHandler({
-  //   outputName,
-  //   captionHeight: 220,
-  //   pageUrl: 'https://www.bilibili.com/video/BV14D4y1M7ub/?spm_id_from=333.788.recommend_more_video.-1&vd_source=f4666564bd398823589647df2a108413',
-  // });
+  const outputName = 'test_out_put'
+  const videoInfoArr = await aiPageHandler({
+    outputName,
+    captionHeight: 220,
+    pageUrl: 'https://www.bilibili.com/video/BV14D4y1M7ub/?spm_id_from=333.788.recommend_more_video.-1&vd_source=f4666564bd398823589647df2a108413',
+  });
 
-  const userPrompt = '生成一段关于人工智能的文章：';
-  const res = await callChatGPT(userPrompt);
-  console.log(res);
+  // const userPrompt = '生成一段关于人工智能的文章：';
+  // const res = await callChatGPT(userPrompt);
+  // console.log(res);
 
   // const formImg = imageToBase64(`output/${outputName}.png`)
   // const baiduInfo = await generalBasicImg({

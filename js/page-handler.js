@@ -17,17 +17,16 @@ const aiPageHandler = async function (
   try {
     const {page} = await openBrowser() // 打开浏览器
     await _openPage(page, pageUrl) // 打开页面
-    console.log('--sleeping--')
-    await sleep(5000);
+    await sleep(1000);
     console.log('--loading--')
-    await sleep(5000);
+    await sleep(1000);
     await injectWindowFuc(page)
     console.log('--init start--')
     const {duration} = await _initVideo(page)
     console.log('--init end--')
     console.log(`视频时长共${duration}秒`)
 
-    for (let i = 1; i < 10; i += 1.5) { // TODO::
+    for (let i = 1; i < 5; i += 1) { // TODO::
       // return {captionImg, videoImage, videoTime, currentTime, id}
       const item = await _getVideoData({
         page,
@@ -93,7 +92,7 @@ async function _openPage(page, pageUrl) {
   ]
   const url = pageUrl ? pageUrl : urls[0]
   // await p.setBypassCSP(true)
-  await page.goto(url, {timeout: 60000});
+  await page.goto(url);
   await page.setCookie(...cookiesArray);
 }
 

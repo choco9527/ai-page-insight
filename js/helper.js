@@ -5,7 +5,7 @@
  * @private
  */
 const _initVideo = async (page) => {
-  await page.waitForSelector('#bilibili-player video');
+  await page.waitForSelector('#bilibili-player video', {timeout: 60000});
   await page.click('.bpx-player-ctrl-btn.bpx-player-ctrl-wide');
 
   return page.evaluate(async () => {
@@ -35,6 +35,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
   await page.waitForSelector('#bilibili-player');
 
   const videoData = await page.evaluate(async (currentTime, tHeight) => {
+
 
     function HandleCanvas({videoSelector = '', tHeight}) {
       const CanvasId = 'yyds-canvas'
@@ -141,48 +142,137 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
           return data
         }
 
-        if (gray) {
-          _grayData(imageData.data)
+        function getThresholdingImageData() {
+          function processImage(imageData, matrixSize = 9, highThreshold = 200, lowThreshold = 50) {
+            const processedImageData = processImageData(imageData, matrixSize, highThreshold, lowThreshold);
+            return processedImageData;
+          }
+
+          function processImageData(imageData, matrixSize, highThreshold, lowThreshold) {
+            const width = imageData.width;
+            const height = imageData.height;
+            const data = imageData.data;
+            const halfSize = Math.floor(matrixSize / 2);
+
+            // 遍历每个像素
+            for (let y = 0; y < height; y++) {
+              for (let x = 0; x < width; x++) {
+                const pixelIndex = (y * width + x) * 4;
+                const pixelMatrix = getPixelMatrix(x, y, width, height, data, matrixSize);
+
+                // 判断像素矩阵是否可信
+                if (isPixelMatrixTrusted(pixelMatrix, highThreshold, lowThreshold)) {
+                  // 像素矩阵可信，不做处理
+                  continue;
+                } else {
+                  // 像素矩阵不可信，将所有像素设为白色
+                  for (let i = 0; i < matrixSize * matrixSize; i++) {
+                    const pixelOffset = pixelIndex + i * 4;
+                    data[pixelOffset] = 255;     // 设置红色通道为 255（白色）
+                    data[pixelOffset + 1] = 255; // 设置绿色通道为 255（白色）
+                    data[pixelOffset + 2] = 255; // 设置蓝色通道为 255（白色）
+                  }
+                }
+              }
+            }
+
+            return imageData;
+          }
+
+          function getPixelMatrix(x, y, width, height, data, matrixSize) {
+            const pixelMatrix = [];
+
+            // 遍历像素矩阵
+            for (let j = y - halfSize; j <= y + halfSize; j++) {
+              for (let i = x - halfSize; i <= x + halfSize; i++) {
+                const pixelOffset = (clamp(j, 0, height - 1) * width + clamp(i, 0, width - 1)) * 4;
+                const pixel = {
+                  r: data[pixelOffset],
+                  g: data[pixelOffset + 1],
+                  b: data[pixelOffset + 2]
+                };
+                pixelMatrix.push(pixel);
+              }
+            }
+
+            return pixelMatrix;
+          }
+
+          function isPixelMatrixTrusted(pixelMatrix, highThreshold, lowThreshold) {
+            let hasHighAvg = false;
+            let hasLowAvg = false;
+
+            // 计算像素矩阵的 RGB 均值
+            const avgR = getAverageValue(pixelMatrix, 'r');
+            const avgG = getAverageValue(pixelMatrix, 'g');
+            const avgB = getAverageValue(pixelMatrix, 'b');
+
+            // 判断均值是否满足条件
+            if (avgR > highThreshold && avgG > highThreshold && avgB > highThreshold) {
+              hasHighAvg = true;
+            }
+            if (avgR < lowThreshold && avgG < lowThreshold && avgB < lowThreshold) {
+              hasLowAvg = true;
+            }
+
+            return hasHighAvg && hasLowAvg;
+          }
+
+          function getAverageValue(pixelMatrix, channel) {
+            let sum = 0;
+
+            for (let i = 0; i < pixelMatrix.length; i++) {
+              sum += pixelMatrix[i][channel];
+            }
+
+            return sum / pixelMatrix.length;
+          }
+
+          function clamp(value, min, max) {
+            return Math.min(Math.max(value, min), max);
+          }
+          return {
+            processImage
+          }
         }
+
+        const {processImage} = getThresholdingImageData()
+
+        if (gray) {
+          // _grayData(imageData.data)
+          processImage(imageData)
+        }
+
         console.log('输出imageData')
         ctx.putImageData(imageData, 0, 0);
 
         function scaleImage(canvas, scale) {
           const context = canvas.getContext('2d');
-          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-          const width = imageData.width;
-          const height = imageData.height;
+          const {width, height} = canvas;
+          const imageData = context.getImageData(0, 0, width, height);
 
-          // 创建放大后的 canvas 元素
           const scaledCanvas = document.createElement('canvas');
           const scaledContext = scaledCanvas.getContext('2d');
-
-          // 设置放大后的 canvas 尺寸
           scaledCanvas.width = width * scale;
           scaledCanvas.height = height * scale;
 
-          // 放大图像像素点
           const scaledImageData = scaledContext.createImageData(width * scale, height * scale);
           for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
               const sourceIndex = (y * width + x) * 4;
-              const targetIndex = (y * scale * width * scale + x * scale) * 4;
 
               for (let j = 0; j < scale; j++) {
                 for (let i = 0; i < scale; i++) {
-                  const targetPixelIndex = (targetIndex + j * width * 4 * scale + i * 4);
-                  scaledImageData.data.set(imageData.data.slice(sourceIndex, sourceIndex + 4), targetPixelIndex);
+                  const targetIndex = ((y * scale + j) * width * scale + (x * scale + i)) * 4;
+                  scaledImageData.data.set(imageData.data.subarray(sourceIndex, sourceIndex + 4), targetIndex);
                 }
               }
             }
           }
-
-          // 在放大后的 canvas 上绘制放大后的图像数据
           scaledContext.putImageData(scaledImageData, 0, 0);
-
-          // 获取放大后的图像数据的 Base64 字符串
-          return scaledCanvas
+          return scaledCanvas;
         }
+
 
         // 放大图片
         const scaledCanvas = scaleImage(canvasEle, scaleRatio)
@@ -215,8 +305,8 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             await window.sleep(100)
             const captionCanvasEl = drawCaptionImg({id: tId})
             const videoCanvasEl = drawVideoImg()
-            item.captionImg = await processImageAndReturnBase64(captionCanvasEl, {scaleRatio: 0.5})
-            item.videoImage = await processImageAndReturnBase64(videoCanvasEl, {gray: false})
+            item.captionImg = await processImageAndReturnBase64(captionCanvasEl, {gray: true})
+            item.videoImage = await processImageAndReturnBase64(videoCanvasEl)
             item.videoTime = timeElement ? timeElement.textContent : '';
             resolve(item)
           });
