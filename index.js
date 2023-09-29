@@ -3,7 +3,8 @@ const {imageToBase64, saveJSONToFile} = require('./js/common')
 const {generalBasicImg} = require('./js/baiduOcr/rest2.0ocrv1general_basic')
 
 const main = async function () {
-  const outputName = 'test_out_put'
+  // const outputName = 'orionOut'
+  const outputName = 'out3'
   const videoInfoArr = await aiPageHandler({
     outputName,
     captionHeight: 220,
@@ -28,5 +29,5 @@ const main = async function () {
 
 
 main().then(data => {
-  console.log('最终数据', data);
+  // console.log('最终数据', data);
 })

@@ -26,7 +26,7 @@ const aiPageHandler = async function (
     console.log('--init end--')
     console.log(`视频时长共${duration}秒`)
 
-    for (let i = 1; i < 5; i += 1) { // TODO::
+    for (let i = 1; i < duration; i += 1.5) {
       // return {captionImg, videoImage, videoTime, currentTime, id}
       const item = await _getVideoData({
         page,
@@ -63,7 +63,7 @@ async function openBrowser() {
   console.log('正在启动 Chrome')
 
   const options = {
-    headless: false, // 'new', // 无头模式
+    headless: 'new', // 'new', // 无头模式
     args: launchConfig,
     defaultViewport: {width: 1280, height: 800},
     timeout: 60000,
@@ -92,7 +92,7 @@ async function _openPage(page, pageUrl) {
   ]
   const url = pageUrl ? pageUrl : urls[0]
   // await p.setBypassCSP(true)
-  await page.goto(url);
+  await page.goto(url, {timeout: 90000});
   await page.setCookie(...cookiesArray);
 }
 
@@ -102,6 +102,7 @@ async function _openPage(page, pageUrl) {
  */
 async function injectWindowFuc(page) {
   await page.exposeFunction('sleep', sleep)
+  // await page.exposeFunction('processImageData', processImageData)
 }
 
 module.exports = {

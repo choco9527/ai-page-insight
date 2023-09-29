@@ -207,6 +207,7 @@ function getBase64SizeInMB(base64String) {
   const buffer = Buffer.from(base64WithoutPrefix, 'base64');
   const sizeInBytes = buffer.length;
   const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
+  console.log('图像大小', sizeInMB)
   return sizeInMB;
 }
 
@@ -221,11 +222,12 @@ function saveJSONToFile(jsonStr, filePath) {
   });
 }
 
+
 module.exports = {
   randomNumber,
   sleep,
   concatenateImages,
   concatenateImagesWithOrderText,
   imageToBase64,
-  saveJSONToFile
+  saveJSONToFile,
 };
