@@ -241,37 +241,41 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         console.log('输出imageData')
         ctx.putImageData(imageData, 0, 0);
 
-        function scaleImage(canvas, scale) {
-          const context = canvas.getContext('2d');
-          context.willReadFrequently = true;
-          const {width, height} = canvas;
-          const imageData = context.getImageData(0, 0, width, height);
+        if (scaleRatio > 1) {
+          function scaleImage(canvas, scale) {
+            const context = canvas.getContext('2d');
+            context.willReadFrequently = true;
+            const {width, height} = canvas;
+            const imageData = context.getImageData(0, 0, width, height);
 
-          const scaledCanvas = document.createElement('canvas');
-          const scaledContext = scaledCanvas.getContext('2d');
-          scaledCanvas.width = width * scale;
-          scaledCanvas.height = height * scale;
+            const scaledCanvas = document.createElement('canvas');
+            const scaledContext = scaledCanvas.getContext('2d');
+            scaledCanvas.width = width * scale;
+            scaledCanvas.height = height * scale;
 
-          const scaledImageData = scaledContext.createImageData(width * scale, height * scale);
-          for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-              const sourceIndex = (y * width + x) * 4;
+            const scaledImageData = scaledContext.createImageData(width * scale, height * scale);
+            for (let y = 0; y < height; y++) {
+              for (let x = 0; x < width; x++) {
+                const sourceIndex = (y * width + x) * 4;
 
-              for (let j = 0; j < scale; j++) {
-                for (let i = 0; i < scale; i++) {
-                  const targetIndex = ((y * scale + j) * width * scale + (x * scale + i)) * 4;
-                  scaledImageData.data.set(imageData.data.subarray(sourceIndex, sourceIndex + 4), targetIndex);
+                for (let j = 0; j < scale; j++) {
+                  for (let i = 0; i < scale; i++) {
+                    const targetIndex = ((y * scale + j) * width * scale + (x * scale + i)) * 4;
+                    scaledImageData.data.set(imageData.data.subarray(sourceIndex, sourceIndex + 4), targetIndex);
+                  }
                 }
               }
             }
+            scaledContext.putImageData(scaledImageData, 0, 0);
+            return scaledCanvas;
           }
-          scaledContext.putImageData(scaledImageData, 0, 0);
-          return scaledCanvas;
-        }
 
-        // 放大图片
-        const scaledCanvas = scaleImage(canvasEle, scaleRatio)
-        return scaledCanvas.toDataURL();
+          // 放大图片
+          const scaledCanvas = scaleImage(canvasEle, scaleRatio)
+          return scaledCanvas.toDataURL();
+        } else {
+          return canvasEle.toDataURL();
+        }
       }
 
       /**
@@ -290,8 +294,8 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
           const item = {
             captionImg: null, // 字幕图像
             videoImage: '', // 当前视频画面
-            videoTime: '', // 视频当前时间
-            currentTime, // 当前秒
+            videoTime: '', // 视频当前时间 02:11
+            currentTime, // 当前秒 230
             id: tId,
           }
           const handleCanPlayThrough = async () => {
@@ -299,7 +303,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             videoEl.pause(); // 暂停
             const captionCanvasEl = drawCaptionImg({id: tId})
             const videoCanvasEl = drawVideoImg()
-            item.captionImg = await processImageAndReturnBase64(captionCanvasEl, {gray: true, scaleRatio: 2})
+            item.captionImg = await processImageAndReturnBase64(captionCanvasEl, {gray: true, scaleRatio: 1})
             item.videoImage = await processImageAndReturnBase64(videoCanvasEl)
             item.videoTime = timeElement ? timeElement.textContent : '';
             videoEl.removeEventListener('canplaythrough', handleCanPlayThrough);

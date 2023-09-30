@@ -9,7 +9,6 @@ require('dotenv').config();
 const aiPageHandler = async function (
   {
     captionHeight = 100, // 字幕高度
-    outputName, // 输出图片\文件地址
     pageUrl = '' // 视频地址
   }) {
   const videoInfoArr = [];
@@ -39,14 +38,6 @@ const aiPageHandler = async function (
       })
     }
     await sleep(1000);
-
-    if (outputName) {
-      console.log('合并字幕图片')
-      const allCaptionImg = videoInfoArr.map(item => item.captionImg)
-      await concatenateImagesWithOrderText(allCaptionImg, `output/${outputName}.png`);
-      console.log('保存全部数据到json')
-      saveJSONToFile(JSON.stringify(videoInfoArr), `output/${outputName}.json`)
-    }
 
     // const text = await getTextByOcrSingle(base64)
     // console.log(text);

@@ -1,4 +1,5 @@
 const {createWorker, createScheduler} = require('tesseract.js');
+const {tesseractWorkerConfig, supportLang} = require('./constans')
 const path = require('path');
 
 /**

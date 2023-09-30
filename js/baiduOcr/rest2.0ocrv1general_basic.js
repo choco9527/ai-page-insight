@@ -3,26 +3,33 @@ require('dotenv').config();
 const AK = process.env.AK;
 const SK = process.env.SK;
 
-async function generalBasicImg({image}) {
-  var options = {
-    'method': 'POST',
-    'url': 'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=' + await getAccessToken(),
-    'headers': {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Accept': 'application/json'
-    },
-    form: {
-      'detect_direction': 'false',
-      'paragraph': 'false',
-      'probability': 'false',
-      image
-    }
-  };
+function generalBasicImg({image}) {
+  return new Promise(async (resolve, reject) => {
+    const options = {
+      'method': 'POST',
+      'url': 'https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=' + await getAccessToken(),
+      'headers': {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
+      },
+      form: {
+        'detect_direction': 'false',
+        'paragraph': 'false',
+        'probability': 'false',
+        image
+      }
+    };
 
-  request(options, function (error, response) {
-    if (error) throw new Error(error);
-    console.log(response.body);
-  });
+    request(options, function (error, response) {
+      if (error) {
+        console.log('识别失败', error);
+        reject(error)
+      } else {
+        console.log('识别成功', response.body);
+        resolve(JSON.parse(response.body))
+      }
+    });
+  })
 }
 
 /**

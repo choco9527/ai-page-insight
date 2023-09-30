@@ -87,10 +87,16 @@ const cookiesArray = cookie.split("; ").map(cookie => {
   return { name, value, domain: '.bilibili.com' };
 });
 
+const userPrompt = `以上的数组是一段视频的字幕的OCR识别的结果，其中数字02:11表示视频处在2分11秒的位置，
+其中可能会有一些小的文字识别错误，请忽略细小问题，请简要总结该视频的内容，并给出你觉得的视频重要内容关键的时间点，如02:13
+`
+
+
 module.exports = {
   tesseractWorkerConfig,
   supportLang,
   launchConfig: launchConfigAll,
   cookie,
-  cookiesArray
+  cookiesArray,
+  userPrompt
 }

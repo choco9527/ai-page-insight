@@ -9,7 +9,7 @@ async function callChatGPT(prompt) {
     const response = await openai.createCompletion({
       engine: 'davinci-codex', // 或者你想要使用的其他引擎
       prompt: prompt,
-      max_tokens: 50, // 调整生成的最大标记数
+      max_tokens: 1000, // 调整生成的最大标记数
     });
     console.log(response.choices[0].text);
 
