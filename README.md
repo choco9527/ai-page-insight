@@ -1,2 +1,3 @@
-基于Nodejs+Chatai的网页（视频）分析工具实践
+基于Nodejs+Chatai的视频网页总结工具
 ==========
+通过字幕分析+openai实现视频总结功能
