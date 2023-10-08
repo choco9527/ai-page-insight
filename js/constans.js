@@ -13,6 +13,8 @@ const supportLang = {
 const launchConfigSimple = [
   "--window-position=0,0",
   `--window-size=1280,800`,
+  '–enable-gpu', // GPU硬件加速
+  '--disable-timeouts-for-profiling',
 ]
 
 const launchConfigAll = [
@@ -71,7 +73,7 @@ const userPrompt = `以上的数组是一段视频的字幕的OCR识别的结果
 module.exports = {
   tesseractWorkerConfig,
   supportLang,
-  launchConfig: launchConfigAll, // launchConfigSimple , // launchConfigAll,
+  launchConfig: launchConfigSimple, // launchConfigSimple , // launchConfigAll,
   cookie,
   cookiesArray,
   userPrompt

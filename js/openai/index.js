@@ -1,27 +1,55 @@
-const { OpenAIApi } = require('openai');
 require('dotenv').config();
+const https = require('https');
 const apiKey = process.env.OPENAI_API_KEY;
 
-const openai = new OpenAIApi({ key: apiKey });
-
 async function callChatGPT(prompt) {
-  try {
-    const response = await openai.createCompletion({
-      engine: 'davinci-codex', // 或者你想要使用的其他引擎
-      prompt: prompt,
-      max_tokens: 1000, // 调整生成的最大标记数
-    });
-    console.log(response.choices[0].text);
+  const data = JSON.stringify({
+    prompt: prompt,
+    max_tokens: 300, // 根据需要调整 max_tokens 的值
+    temperature: 0.7
+  });
 
-    return response
-  } catch (error) {
-    console.error(error);
-  }
+  const options = {
+    hostname: 'api.openai.com',
+    path: '/v1/engines/davinci-codex/completions',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    }
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let responseData = '';
+
+      res.on('data', (chunk) => {
+        responseData += chunk;
+      });
+
+      res.on('end', () => {
+        console.log('ai结果', responseData);
+        const response = JSON.parse(responseData);
+        if (response.error) {
+          reject(response.error.message)
+        } else {
+          resolve(response.choices[0].text);
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.write(data);
+    req.end();
+  });
 }
 
 // const userPrompt = '生成一段关于人工智能的文章：';
 // callChatGPT(userPrompt);
 
-modules.export = {
+module.exports = {
   callChatGPT
 }

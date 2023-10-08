@@ -27,7 +27,7 @@ const aiPageHandler = async function (
     console.timeEnd('启动总耗时');
     console.log(`视频时长共${duration}秒`)
 
-    for (let i = 1; i < duration; i += 1.5) {
+    for (let i = 1; i < 30; i += 1.5) { // TODO::测试30秒
       // return {captionImg, videoImage, videoTime, currentTime, id}
       const item = await _getVideoData({
         page,
@@ -62,7 +62,7 @@ async function openBrowser({headless = true} = {}) {
     timeout: 60000,
     // devtools: true,
     ignoreDefaultArgs: ["--enable-automation"],
-    userDataDir: headless ? undefined : './user-data-cache/path'
+    // userDataDir: headless ? undefined : './user-data-cache/path'
   }
   if (process.env.CHROME_PATH) {
     options.executablePath = process.env.CHROME_PATH
