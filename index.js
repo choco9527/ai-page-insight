@@ -5,15 +5,16 @@ const {getTextByOcrSingle} = require('./js/tesseractOcr')
 const {userPrompt} = require('./js/constans')
 
 const main = async function () {
-  const outputName = 'GWY'
+  const outputName = 'GWY2'
+  const pageUrl = 'https://www.bilibili.com/video/BV14D4y1M7ub/?spm_id_from=333.788.recommend_more_video.-1&vd_source=f4666564bd398823589647df2a108413'
 
-  /***   获取视频图像    ***/
-  // const videoInfoArr = await aiPageHandler({
-  //   captionHeight: 220,
-  //   pageUrl: 'https://www.bilibili.com/video/BV14D4y1M7ub/?spm_id_from=333.788.recommend_more_video.-1&vd_source=f4666564bd398823589647df2a108413',
-  // });
-  // saveJSONToFile(JSON.stringify(videoInfoArr), `output/json/${outputName}.json`)
-  // console.log('保存全部数据到json')
+  /***   获取视频图像   ***/
+  const videoInfoArr = await aiPageHandler({
+    captionHeight: 220,
+    pageUrl,
+  });
+  saveJSONToFile(JSON.stringify(videoInfoArr), `output/json/${outputName}.json`)
+  console.log('保存全部数据到json')
 
   /***   合并图像    ***/
   // const videoInfoArr = await readJson(`output/json/${outputName}.json`)
@@ -26,7 +27,7 @@ const main = async function () {
   //
   // const {imagePartsLength} = await concatenateImagesWithOrderText({
   //   list: allCaptionInfos,
-  //   outputFileName: `GWY`
+  //   outputFileName: outputName
   // });
   // console.log('图像合并完成', imagePartsLength)
 

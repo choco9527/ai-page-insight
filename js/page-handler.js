@@ -14,7 +14,8 @@ const aiPageHandler = async function (
   const videoInfoArr = [];
 
   try {
-    const {page} = await openBrowser() // 打开浏览器
+    console.time('启动总耗时');
+    const {page} = await openBrowser({headless: true}) // 打开浏览器
     await _openPage(page, pageUrl) // 打开页面
     await sleep(1000);
     console.log('--loading--')
@@ -23,6 +24,7 @@ const aiPageHandler = async function (
     console.log('--init start--')
     const {duration} = await _initVideo(page)
     console.log('--init end--')
+    console.timeEnd('启动总耗时');
     console.log(`视频时长共${duration}秒`)
 
     for (let i = 1; i < duration; i += 1.5) {
@@ -50,16 +52,17 @@ const aiPageHandler = async function (
   }
 };
 
-async function openBrowser() {
+async function openBrowser({headless = true} = {}) {
   console.log('正在启动 Chrome')
 
   const options = {
-    headless: 'new', // 'new', // 无头模式
+    headless: headless ? 'new' : false,// 无头模式
     args: launchConfig,
     defaultViewport: {width: 1280, height: 800},
     timeout: 60000,
     // devtools: true,
-    ignoreDefaultArgs: ["--enable-automation"]
+    ignoreDefaultArgs: ["--enable-automation"],
+    userDataDir: headless ? undefined : './user-data-cache/path'
   }
   if (process.env.CHROME_PATH) {
     options.executablePath = process.env.CHROME_PATH
