@@ -103,7 +103,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         ctx.willReadFrequently = true;
         const imageData = ctx.getImageData(0, 0, canvasEle.width, canvasEle.height);
 
-        const _grayData = data => { // 二值化
+        const _grayData = data => { // 全局二值化
           function calculateVariance(array) { // 计算方差
             // 计算数组的平均值
             const mean = array.reduce((sum, value) => sum + value, 0) / array.length;
@@ -241,7 +241,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         console.log('输出imageData')
         ctx.putImageData(imageData, 0, 0);
 
-        if (scaleRatio > 1) {
+        if (scaleRatio > 1) { // 清晰化图像
           function scaleImage(canvas, scale) {
             const context = canvas.getContext('2d');
             context.willReadFrequently = true;
@@ -270,8 +270,72 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             return scaledCanvas;
           }
 
-          // 放大图片
-          const scaledCanvas = scaleImage(canvasEle, scaleRatio)
+          function enhanceImage(canvas) {
+            const ctx = canvas.getContext('2d');
+
+            // 获取图像数据
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // 应用图像清晰化算法
+            // 这里使用一个简单的锐化滤波器作为示例
+            const filterMatrix = [
+              0, -1, 0,
+              -1, 5, -1,
+              0, -1, 0
+            ];
+            applyConvolutionFilter(imageData, filterMatrix);
+
+            // 将处理后的图像数据绘制回 Canvas
+            ctx.putImageData(imageData, 0, 0);
+            return canvas
+          }
+
+          // 应用卷积滤波器
+          function applyConvolutionFilter(imageData, filterMatrix) {
+            const data = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+            const filterSize = Math.sqrt(filterMatrix.length);
+            const halfFilterSize = Math.floor(filterSize / 2);
+
+            const tempData = new Uint8ClampedArray(data.length);
+
+            for (let i = 0; i < height; i++) {
+              for (let j = 0; j < width; j++) {
+                const pixelIndex = (i * width + j) * 4;
+                let r = 0, g = 0, b = 0;
+
+                for (let k = 0; k < filterSize; k++) {
+                  for (let l = 0; l < filterSize; l++) {
+                    const rowIndex = i + k - halfFilterSize;
+                    const colIndex = j + l - halfFilterSize;
+
+                    if (rowIndex >= 0 && rowIndex < height && colIndex >= 0 && colIndex < width) {
+                      const neighborPixelIndex = (rowIndex * width + colIndex) * 4;
+                      const filterValue = filterMatrix[k * filterSize + l];
+
+                      r += data[neighborPixelIndex] * filterValue;
+                      g += data[neighborPixelIndex + 1] * filterValue;
+                      b += data[neighborPixelIndex + 2] * filterValue;
+                    }
+                  }
+                }
+
+                tempData[pixelIndex] = r;
+                tempData[pixelIndex + 1] = g;
+                tempData[pixelIndex + 2] = b;
+                tempData[pixelIndex + 3] = data[pixelIndex + 3];
+              }
+            }
+
+            for (let i = 0; i < data.length; i++) {
+              data[i] = tempData[i];
+            }
+          }
+
+          // 清晰化图像
+          const scaledCanvas = enhanceImage(canvasEle)
           return scaledCanvas.toDataURL();
         } else {
           return canvasEle.toDataURL();
@@ -303,7 +367,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             videoEl.pause(); // 暂停
             const captionCanvasEl = drawCaptionImg({id: tId})
             const videoCanvasEl = drawVideoImg()
-            item.captionImg = await processImageAndReturnBase64(captionCanvasEl, {gray: true, scaleRatio: 1})
+            item.captionImg = await processImageAndReturnBase64(captionCanvasEl, {gray: true, scaleRatio: 2})
             item.videoImage = await processImageAndReturnBase64(videoCanvasEl)
             item.videoTime = timeElement ? timeElement.textContent : '';
             videoEl.removeEventListener('canplaythrough', handleCanPlayThrough);

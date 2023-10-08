@@ -9,13 +9,13 @@ require('dotenv').config();
 const aiPageHandler = async function (
   {
     captionHeight = 100, // 字幕高度
-    pageUrl = '' // 视频地址
+    pageUrl = '', // 视频地址
   }) {
   const videoInfoArr = [];
 
   try {
     console.time('启动总耗时');
-    const {page} = await openBrowser({headless: true}) // 打开浏览器
+    const {page} = await openBrowser({headless: false}) // 打开浏览器
     await _openPage(page, pageUrl) // 打开页面
     await sleep(1000);
     console.log('--loading--')
