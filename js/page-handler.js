@@ -15,7 +15,7 @@ const aiPageHandler = async function (
 
   try {
     console.time('启动总耗时');
-    const {page} = await openBrowser({headless: false}) // 打开浏览器
+    const {page} = await openBrowser({headless: true}) // 打开浏览器
     await _openPage(page, pageUrl) // 打开页面
     await sleep(1000);
     console.log('--loading--')
@@ -27,7 +27,7 @@ const aiPageHandler = async function (
     console.timeEnd('启动总耗时');
     console.log(`视频时长共${duration}秒`)
 
-    for (let i = 1; i < duration; i += 1.5) {
+    for (let i = 1; i < 10; i += 1.5) { // TODO
       // return {captionImg, videoImage, videoTime, currentTime, id}
       const item = await _getVideoData({
         page,

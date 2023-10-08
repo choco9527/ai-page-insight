@@ -71,7 +71,7 @@ const userPrompt = `以上的数组是一段视频的字幕的OCR识别的结果
 module.exports = {
   tesseractWorkerConfig,
   supportLang,
-  launchConfig: launchConfigAll, // launchConfigSimple , // launchConfigAll,
+  launchConfig: launchConfigSimple, // launchConfigSimple , // launchConfigAll,
   cookie,
   cookiesArray,
   userPrompt

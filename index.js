@@ -1,11 +1,12 @@
 const {aiPageHandler} = require('./js/page-handler')
-const {imageToBase64, readJson, saveJSONToFile, extractTime, splitArray} = require('./js/common')
+const {imageToBase64, readJson, saveJSONToFile, extractTime, splitArray, concatenateImagesWithOrderText} = require('./js/common')
 const {generalBasicImg} = require('./js/baiduOcr/rest2.0ocrv1general_basic')
 const {getTextByOcrSingle} = require('./js/tesseractOcr')
+const {callChatGPT} = require('./js/openai')
 const {userPrompt} = require('./js/constans')
 
 const main = async function () {
-  const outputName = 'GWY2'
+  const outputName = 'TEST'
   const pageUrl = 'https://www.bilibili.com/video/BV14D4y1M7ub/?spm_id_from=333.788.recommend_more_video.-1&vd_source=f4666564bd398823589647df2a108413'
 
   /***   获取视频图像   ***/
@@ -16,59 +17,59 @@ const main = async function () {
   saveJSONToFile(JSON.stringify(videoInfoArr), `output/json/${outputName}.json`)
   console.log('保存全部数据到json')
 
+  return
+
   /***   合并图像    ***/
   // const videoInfoArr = await readJson(`output/json/${outputName}.json`)
-  // console.log('总字幕条数', videoInfoArr.length);
-  //
-  // const allCaptionInfos = videoInfoArr.map(item => ({
-  //   base64Image: item.captionImg,
-  //   videoTime: item.videoTime
-  // }))
-  //
-  // const {imagePartsLength} = await concatenateImagesWithOrderText({
-  //   list: allCaptionInfos,
-  //   outputFileName: outputName
-  // });
-  // console.log('图像合并完成', imagePartsLength)
+  console.log('总字幕条数', videoInfoArr.length);
 
-  // for (let i = 0; i < 1; i++) {
-  //   getTextByOcrSingle(`output/img/${outputName}_${i}.png`)
-  //   // console.log('百度解析', words_result);
-  // }
+  const allCaptionInfos = videoInfoArr.map(item => ({
+    base64Image: item.captionImg,
+    videoTime: item.videoTime
+  }))
 
+  const {imagePartsLength} = await concatenateImagesWithOrderText({
+    list: allCaptionInfos,
+    outputFileName: outputName
+  });
+  console.log('图像合并完成', imagePartsLength)
 
   /***   OCR识别    ***/
-  // const ocrList = []
-  // for (let i = 0; i < imagePartsLength; i++) {
-  //   const formImg = imageToBase64(`output/img/${outputName}_${i}.png`)
-  //   const baiduInfo = await generalBasicImg({
-  //     image: formImg
-  //   })
-  //   const words_result = baiduInfo.words_result
-  //   // console.log('百度解析', words_result);
-  //   ocrList.push(...words_result)
-  // }
-  // console.log('ocrList', ocrList)
-  // saveJSONToFile(JSON.stringify(ocrList), `output/ocr/${outputName}.json`)
-  // console.log('存ocrList数据到json')
+  const ocrList = []
+  for (let i = 0; i < imagePartsLength; i++) {
+    const formImg = imageToBase64(`output/img/${outputName}_${i}.png`)
+    const baiduInfo = await generalBasicImg({
+      image: formImg
+    })
+    const words_result = baiduInfo.words_result
+    console.log('百度解析', words_result);
+    ocrList.push(...words_result)
+  }
+  console.log('ocrList', ocrList)
+  saveJSONToFile(JSON.stringify(ocrList), `output/ocr/${outputName}.json`)
+  console.log('存ocrList数据到json')
 
   // const ocrList = await readJson(`output/ocr/${outputName}.json`)
-  // const simOcrList = ocrList.map(({words})=>{
-  //   return extractTime(words)
-  // })
-  //
-  // const chunkedArray = splitArray(simOcrList, 100);
-  // chunkedArray.forEach((chunks, i)=>{
-  //   saveJSONToFile(JSON.stringify(chunks), `output/ocr/sim_${outputName}_${i}.json`)
-  // })
+  const simOcrList = ocrList.map(({words}) => {
+    return extractTime(words)
+  })
 
-  /***   OPENAI    ***/
+  /***   OCR结果拆分存储   ***/
+  const chunkedArray = splitArray(simOcrList, 100);
+  chunkedArray.forEach((chunks, i) => {
+    const text = JSON.stringify(chunks)
+    saveJSONToFile(text, `output/ocr/sim_${outputName}_${i}.json`)
+  })
+
+  /***   OPENAI分析    ***/
   // const userPrompt = '：';
-  // const res = await callChatGPT(userPrompt);
-  // console.log(res);
-
-  // console.log(b);
-  // return b
+  const aiList = []
+  for (let i = 0; i < chunkedArray.length; i++) {
+    const text = await readJson(`output/ocr/sim_${outputName}_${i}.json`)
+    const aiRes = await callChatGPT(text + userPrompt)
+    aiList.push(aiRes)
+  }
+  console.log(aiList);
 
   const content = `
 视频的主要内容是关于容易辞职的岗位的讨论。视频提到了一些异地偏远乡镇的岗位辞职率较高，也涉及了一些观众分享的辞职经历和困扰。重点时间点包括：
@@ -110,9 +111,7 @@ const main = async function () {
 - 04:18：鼓励观众在评论区分享其他容易辞职的单位。
 
 `
-
   console.log(content);
-
 };
 
 
