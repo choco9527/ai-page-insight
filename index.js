@@ -17,7 +17,7 @@ const main = async function () {
   saveJSONToFile(JSON.stringify(videoInfoArr), `output/json/${outputName}.json`)
   console.log('保存全部数据到json')
 
-  return
+
 
   /***   合并图像    ***/
   // const videoInfoArr = await readJson(`output/json/${outputName}.json`)
