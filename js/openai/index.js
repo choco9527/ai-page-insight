@@ -4,6 +4,7 @@ const apiKey = process.env.OPENAI_API_KEY;
 
 async function callChatGPT(prompt) {
   const data = JSON.stringify({
+    model: "text-davinci-003",
     prompt: prompt,
     max_tokens: 300, // 根据需要调整 max_tokens 的值
     temperature: 0.7
@@ -11,7 +12,7 @@ async function callChatGPT(prompt) {
 
   const options = {
     hostname: 'api.openai.com',
-    path: '/v1/engines/davinci-codex/completions',
+    path: '/v1/completions',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -39,6 +40,7 @@ async function callChatGPT(prompt) {
     });
 
     req.on('error', (error) => {
+      console.log('调用失败', error);
       reject(error);
     });
 

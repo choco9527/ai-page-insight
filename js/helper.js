@@ -229,7 +229,6 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
               blockIndex++;
             }
           }
-
           return imageData;
         }
 

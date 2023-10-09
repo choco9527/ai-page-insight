@@ -309,13 +309,17 @@ function getBase64SizeInMB(base64String) {
 
 
 function saveJSONToFile(jsonStr, filePath) {
-  fs.writeFile(filePath, jsonStr, 'utf8', (err) => {
-    if (err) {
-      console.error('Error writing JSON file:', err);
-    } else {
-      console.log('JSON file has been saved successfully.');
-    }
-  });
+  return new Promise((r, j) => {
+    fs.writeFile(filePath, jsonStr, 'utf8', (err) => {
+      if (err) {
+        console.error('Error writing JSON file:', err);
+        j(err)
+      } else {
+        console.log('JSON file has been saved successfully.');
+        r(filePath)
+      }
+    });
+  })
 }
 
 // // 调用示例
@@ -341,7 +345,6 @@ function splitArray(array, chunkSize) {
   }
   return result;
 }
-
 
 
 module.exports = {
