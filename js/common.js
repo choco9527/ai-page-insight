@@ -227,7 +227,7 @@ async function concatenateImagesWithOrderText(
 
       // 将拼接后的图像保存为文件
       await new Promise((resolve, reject) => {
-        concatenatedImage.write(`${folderName}/${outputFileName}.png`, (err) => {
+        concatenatedImage.write(`${folderName}/${outputFileName}_0.png`, (err) => {
           if (err) {
             reject(err);
           } else {

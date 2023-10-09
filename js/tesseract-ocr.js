@@ -11,8 +11,8 @@ async function getTextByOcrSingle(img) {
   const worker = await createWorker(tesseractWorkerConfig);
 
   await (async () => {
-    await worker.loadLanguage(supportLang.zh);
-    await worker.initialize(supportLang.zh);
+    await worker.loadLanguage(supportLang.zh + supportLang.en);
+    await worker.initialize(supportLang.zh + supportLang.en);
 
     const {data: {text}} = await worker.recognize(img);
     console.log('----文本----', text);

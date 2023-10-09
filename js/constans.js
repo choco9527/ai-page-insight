@@ -13,6 +13,8 @@ const supportLang = {
 const launchConfigSimple = [
   "--window-position=0,0",
   `--window-size=1280,800`,
+  '–enable-gpu', // GPU硬件加速
+  '--disable-timeouts-for-profiling',
 ]
 
 const launchConfigAll = [

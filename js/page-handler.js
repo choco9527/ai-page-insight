@@ -1,7 +1,7 @@
 // const puppeteer = require('puppeteer-core');
 const puppeteer = require('puppeteer');
 const {sleep, concatenateImagesWithOrderText, saveJSONToFile} = require('./common');
-const {getTextByOcrSingle, concatenateImages} = require('./tesseractOcr');
+const {getTextByOcrSingle, concatenateImages} = require('./tesseract-ocr');
 const {launchConfig, cookiesArray} = require('./constans');
 const {_initVideo, _getVideoData} = require('./helper')
 require('dotenv').config();
@@ -15,7 +15,7 @@ const aiPageHandler = async function (
 
   try {
     console.time('启动总耗时');
-    const {page} = await openBrowser({headless: true}) // 打开浏览器
+    const {page} = await openBrowser({headless: false}) // 打开浏览器
     await _openPage(page, pageUrl) // 打开页面
     await sleep(1000);
     console.log('--loading--')
@@ -27,7 +27,7 @@ const aiPageHandler = async function (
     console.timeEnd('启动总耗时');
     console.log(`视频时长共${duration}秒`)
 
-    for (let i = 1; i < 10; i += 1.5) { // TODO
+    for (let i = 1; i < 30; i += 1.5) { // TODO::测试30秒
       // return {captionImg, videoImage, videoTime, currentTime, id}
       const item = await _getVideoData({
         page,
@@ -62,7 +62,7 @@ async function openBrowser({headless = true} = {}) {
     timeout: 60000,
     // devtools: true,
     ignoreDefaultArgs: ["--enable-automation"],
-    userDataDir: headless ? undefined : './user-data-cache/path'
+    // userDataDir: headless ? undefined : './user-data-cache/path'
   }
   if (process.env.CHROME_PATH) {
     options.executablePath = process.env.CHROME_PATH

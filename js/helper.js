@@ -244,7 +244,6 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
         if (scaleRatio > 1) { // 清晰化图像
           function scaleImage(canvas, scale) {
             const context = canvas.getContext('2d');
-            context.willReadFrequently = true;
             const {width, height} = canvas;
             const imageData = context.getImageData(0, 0, width, height);
 
@@ -367,7 +366,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
             videoEl.pause(); // 暂停
             const captionCanvasEl = drawCaptionImg({id: tId})
             const videoCanvasEl = drawVideoImg()
-            item.captionImg = await processImageAndReturnBase64(captionCanvasEl, {gray: true, scaleRatio: 2})
+            item.captionImg = await processImageAndReturnBase64(captionCanvasEl, {gray: true, scaleRatio: 1})
             item.videoImage = await processImageAndReturnBase64(videoCanvasEl)
             item.videoTime = timeElement ? timeElement.textContent : '';
             videoEl.removeEventListener('canplaythrough', handleCanPlayThrough);

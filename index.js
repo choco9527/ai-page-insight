@@ -1,26 +1,24 @@
 const {aiPageHandler} = require('./js/page-handler')
 const {imageToBase64, readJson, saveJSONToFile, extractTime, splitArray, concatenateImagesWithOrderText} = require('./js/common')
-const {generalBasicImg} = require('./js/baiduOcr/rest2.0ocrv1general_basic')
-const {getTextByOcrSingle} = require('./js/tesseractOcr')
+const {generalBasicImg} = require('./js/baidu-ocr/rest2.0ocrv1general_basic')
+const {getTextByOcrSingle} = require('./js/tesseract-ocr')
 const {callChatGPT} = require('./js/openai')
 const {userPrompt} = require('./js/constans')
 
 const main = async function () {
-  const outputName = 'TEST'
+  const outputName = 'test'
   const pageUrl = 'https://www.bilibili.com/video/BV14D4y1M7ub/?spm_id_from=333.788.recommend_more_video.-1&vd_source=f4666564bd398823589647df2a108413'
 
   /***   获取视频图像   ***/
   const videoInfoArr = await aiPageHandler({
-    captionHeight: 220,
+    captionHeight: 230,
     pageUrl,
   });
   saveJSONToFile(JSON.stringify(videoInfoArr), `output/json/${outputName}.json`)
   console.log('保存全部数据到json')
 
-
-
-  /***   合并图像    ***/
-  // const videoInfoArr = await readJson(`output/json/${outputName}.json`)
+  /***   合并图像并添加标记    ***/
+  // const videoInfoArr = await readJson(`output/json/${outputName}.json`) // 测试用
   console.log('总字幕条数', videoInfoArr.length);
 
   const allCaptionInfos = videoInfoArr.map(item => ({
@@ -28,11 +26,12 @@ const main = async function () {
     videoTime: item.videoTime
   }))
 
+  /***   拆分字幕图像    ***/
   const {imagePartsLength} = await concatenateImagesWithOrderText({
     list: allCaptionInfos,
     outputFileName: outputName
   });
-  console.log('图像合并完成', imagePartsLength)
+  console.log('图像拆分完成', imagePartsLength)
 
   /***   OCR识别    ***/
   const ocrList = []
@@ -42,7 +41,7 @@ const main = async function () {
       image: formImg
     })
     const words_result = baiduInfo.words_result
-    console.log('百度解析', words_result);
+    // console.log('百度解析', words_result);
     ocrList.push(...words_result)
   }
   console.log('ocrList', ocrList)
@@ -50,22 +49,21 @@ const main = async function () {
   console.log('存ocrList数据到json')
 
   // const ocrList = await readJson(`output/ocr/${outputName}.json`)
-  const simOcrList = ocrList.map(({words}) => {
+  const simOcrList = ocrList.map(({words})=>{
     return extractTime(words)
   })
 
-  /***   OCR结果拆分存储   ***/
+  /***   OPENAI分析    ***/
+  // 分割内容
   const chunkedArray = splitArray(simOcrList, 100);
-  chunkedArray.forEach((chunks, i) => {
-    const text = JSON.stringify(chunks)
-    saveJSONToFile(text, `output/ocr/sim_${outputName}_${i}.json`)
+  chunkedArray.forEach((chunks, i)=>{
+    saveJSONToFile(JSON.stringify(chunks), `output/ocr/chunk_${outputName}_${i}.json`)
   })
 
-  /***   OPENAI分析    ***/
-  // const userPrompt = '：';
+  console.log('AI分析')
   const aiList = []
   for (let i = 0; i < chunkedArray.length; i++) {
-    const text = await readJson(`output/ocr/sim_${outputName}_${i}.json`)
+    const text = await readJson(`output/ocr/chunk_${outputName}_${i}.json`)
     const aiRes = await callChatGPT(text + userPrompt)
     aiList.push(aiRes)
   }
@@ -111,7 +109,7 @@ const main = async function () {
 - 04:18：鼓励观众在评论区分享其他容易辞职的单位。
 
 `
-  console.log(content);
+
 };
 
 
