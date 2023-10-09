@@ -28,7 +28,7 @@ const aiPageHandler = async function (
     console.timeEnd('启动总耗时');
     console.log(`视频时长共${duration}秒`)
 
-    for (let i = 1; i < 50; i += 1.5) { // TODO::测试30秒
+    for (let i = 1; i < duration; i += 1.5) { // TODO::测试30秒
       // return {captionImg, videoImage, videoTime, currentTime, id}
       const item = await _getVideoData({
         page,
