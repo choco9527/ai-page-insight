@@ -1,7 +1,7 @@
 const {aiPageHandler} = require('./js/page-handler')
 const {imageToBase64, readJson, saveJSONToFile, extractTime, splitArray, concatenateImagesWithOrderText} = require('./js/common')
-const {generalBasicImg} = require('./js/baiduOcr/rest2.0ocrv1general_basic')
-const {getTextByOcrSingle} = require('./js/tesseractOcr')
+const {generalBasicImg} = require('./js/baidu-ocr/rest2.0ocrv1general_basic')
+const {getTextByOcrSingle} = require('./js/tesseract-ocr')
 const {callChatGPT} = require('./js/openai')
 const {userPrompt} = require('./js/constans')
 

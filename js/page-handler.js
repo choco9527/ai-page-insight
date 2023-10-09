@@ -1,7 +1,7 @@
 // const puppeteer = require('puppeteer-core');
 const puppeteer = require('puppeteer');
 const {sleep, concatenateImagesWithOrderText, saveJSONToFile} = require('./common');
-const {getTextByOcrSingle, concatenateImages} = require('./tesseractOcr');
+const {getTextByOcrSingle, concatenateImages} = require('./tesseract-ocr');
 const {launchConfig, cookiesArray} = require('./constans');
 const {_initVideo, _getVideoData} = require('./helper')
 require('dotenv').config();

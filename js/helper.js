@@ -100,7 +100,7 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
 
       async function processImageAndReturnBase64(canvasEle, {gray = false, scaleRatio = 1} = {}) {
         const ctx = canvasEle.getContext('2d');
-        // ctx.willReadFrequently = true;
+        ctx.willReadFrequently = true;
         const imageData = ctx.getImageData(0, 0, canvasEle.width, canvasEle.height);
 
         const _grayData = data => { // 全局二值化
