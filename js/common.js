@@ -346,6 +346,124 @@ function splitArray(array, chunkSize) {
   return result;
 }
 
+function deepClone(obj) {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  let copy;
+  if (Array.isArray(obj)) {
+    copy = [];
+    for (let i = 0; i < obj.length; i++) {
+      copy[i] = deepClone(obj[i]);
+    }
+  } else {
+    copy = {};
+    for (let key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        copy[key] = deepClone(obj[key]);
+      }
+    }
+  }
+
+  return copy;
+}
+
+function processImageData(
+  {
+    data,
+    width,
+    height,
+    blockSize = 8,
+    highThreshold = 130,
+    lowThreshold = 90
+  }) {
+  const blocksPerRow = Math.floor(width / blockSize); // 26/5 = 5
+  const blocksPerColumn = Math.floor(height / blockSize); // 26/5 = 5
+
+  const blocks = [];
+
+  for (let blockY = 0; blockY < blocksPerColumn; blockY++) {
+    for (let blockX = 0; blockX < blocksPerRow; blockX++) {
+      const startX = blockX * blockSize;
+      const startY = blockY * blockSize;
+      const endX = Math.min(startX + blockSize, width); // 确保不超出图像边界
+      const endY = Math.min(startY + blockSize, height); // 确保不超出图像边界
+
+      const block = [];
+
+      for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
+          const pixelOffset = (y * width + x) * 4;
+          const pixel = {
+            r: data[pixelOffset],
+            g: data[pixelOffset + 1],
+            b: data[pixelOffset + 2]
+          };
+          block.push(pixel);
+        }
+      }
+
+      blocks.push(block);
+    }
+  }
+
+  function checkTwoValuesGreaterThan(array) {
+    return array.filter(value => value > highThreshold).length >= 2;
+  }
+
+  function checkTwoValuesSmallerThan(array) {
+    return array.filter(value => value < lowThreshold).length >= 2;
+  }
+
+  // 对每个矩阵块进行操作
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    // 至少有x个像素如此表现——像素中有2个值大于、小于两个阈值
+    const filterX = 3
+    const hasHighAvg = block.filter(pixel => checkTwoValuesGreaterThan([pixel.r, pixel.g, pixel.b], highThreshold)).length > filterX; //
+    const hasLowAvg = block.filter(pixel => checkTwoValuesSmallerThan([pixel.r, pixel.g, pixel.b], lowThreshold)).length > filterX; //
+
+    if (!(hasHighAvg && hasLowAvg)) {
+      // 将不满足条件的矩阵块像素设置为白色
+      for (let j = 0; j < block.length; j++) {
+        const pixel = block[j];
+        pixel.r = 255;
+        pixel.g = 255;
+        pixel.b = 255;
+      }
+    }
+  }
+
+  // 将矩阵块重新合并为一维数组
+  let blockIndex = 0;
+  for (let blockY = 0; blockY < blocksPerColumn; blockY++) {
+    for (let blockX = 0; blockX < blocksPerRow; blockX++) {
+      const startX = blockX * blockSize;
+      const startY = blockY * blockSize;
+      const endX = Math.min(startX + blockSize, width);
+      const endY = Math.min(startY + blockSize, height);
+
+      const block = blocks[blockIndex];
+      let pixelIndex = (startY * width + startX) * 4;
+
+      for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
+          const pixel = block[(y - startY) * blockSize + (x - startX)];
+          data[pixelIndex] = pixel.r;
+          data[pixelIndex + 1] = pixel.g;
+          data[pixelIndex + 2] = pixel.b;
+          pixelIndex += 4;
+        }
+        pixelIndex += (width - endX + startX) * 4;
+      }
+
+      blockIndex++;
+    }
+  }
+  return data;
+}
+
 
 module.exports = {
   randomNumber,
@@ -356,5 +474,7 @@ module.exports = {
   saveJSONToFile,
   readJson,
   extractTime,
-  splitArray
+  splitArray,
+  processImageData,
+  deepClone
 };

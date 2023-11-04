@@ -1,6 +1,6 @@
 // const puppeteer = require('puppeteer-core');
 const puppeteer = require('puppeteer');
-const {sleep, concatenateImagesWithOrderText, saveJSONToFile} = require('./common');
+const {sleep, concatenateImagesWithOrderText, saveJSONToFile, deepClone, processImageData} = require('./common');
 const {getTextByOcrSingle, concatenateImages} = require('./tesseract-ocr');
 const {launchConfig, cookiesArray} = require('./constans');
 const {_initVideo, _getVideoData} = require('./helper')
@@ -61,7 +61,7 @@ async function openBrowser({headless = true} = {}) {
     args: launchConfig,
     defaultViewport: {width: 1280, height: 800},
     timeout: 60000,
-    // devtools: true,
+    devtools: true,
     ignoreDefaultArgs: ["--enable-automation"],
     // userDataDir: headless ? undefined : './user-data-cache/path'
   }
@@ -80,14 +80,8 @@ async function openBrowser({headless = true} = {}) {
  * @returns {Promise<void>}
  */
 async function _openPage(page, pageUrl) {
-  const urls = [
-    'https://www.bilibili.com/video/BV14D4y1M7ub/?spm_id_from=333.788.recommend_more_video.-1&vd_source=f4666564bd398823589647df2a108413',
-    'https://www.bilibili.com/video/BV1Nu411w7DL/?spm_id_from=333.1007.tianma.1-1-1.click',
-    'https://www.bilibili.com/video/BV1zm4y1N7zp/?spm_id_from=333.337.search-card.all.click' //
-  ]
-  const url = pageUrl ? pageUrl : urls[0]
-  // await p.setBypassCSP(true)
-  await page.goto(url, {timeout: 90000});
+  await page.setBypassCSP(true)
+  await page.goto(pageUrl, {timeout: 90000});
   await page.setCookie(...cookiesArray);
 }
 
@@ -97,7 +91,8 @@ async function _openPage(page, pageUrl) {
  */
 async function injectWindowFuc(page) {
   await page.exposeFunction('sleep', sleep)
-  // await page.exposeFunction('processImageData', processImageData)
+  await page.exposeFunction('deepClone', deepClone)
+  await page.exposeFunction('processImageData', processImageData)
 }
 
 module.exports = {

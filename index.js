@@ -13,7 +13,7 @@ const {callChatGPT} = require('./js/openai')
 const {userPrompt, showContent} = require('./js/constans')
 
 const main = async function () {
-  const outputName = 'test2'
+  const outputName = 'test-fast'
   const pageUrl = 'https://www.bilibili.com/video/BV14D4y1M7ub/?spm_id_from=333.788.recommend_more_video.-1&vd_source=f4666564bd398823589647df2a108413'
 
   /***   获取视频图像   ***/
@@ -24,6 +24,8 @@ const main = async function () {
   });
   await saveJSONToFile(JSON.stringify(videoInfoArr), `output/json/${outputName}.json`)
   console.log('保存全部数据到json')
+
+  return
 
   /***   合并图像并添加标记    ***/
   // const videoInfoArr = await readJson(`output/json/${outputName}.json`) // 测试用
@@ -48,6 +50,7 @@ const main = async function () {
     const baiduInfo = await generalBasicImg({
       image: formImg
     })
+    // const tInfo = await getTextByOcrSingle(formImg) // 使用tesseract识别
     const words_result = baiduInfo.words_result
     // console.log('百度解析', words_result);
     ocrList.push(...words_result)

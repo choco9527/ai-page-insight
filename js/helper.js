@@ -229,12 +229,19 @@ async function _getVideoData({page, currentTime, tHeight = 80}) {
               blockIndex++;
             }
           }
+          imageData.data = [...data];
           return imageData;
         }
 
         if (gray) {
           // _grayData(imageData.data)
-          processImageData(imageData)
+          // processImageData(imageData)
+          const newData = await window.processImageData({
+            data: await window.deepClone(imageData.data),
+            width: imageData.width,
+            height: imageData.height,
+          })
+          imageData.data = newData
         }
 
         console.log('输出imageData')
